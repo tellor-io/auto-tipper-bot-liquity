@@ -19,18 +19,18 @@ tip_multiplier = config.tip_multiplier
 initial_profit_margin_usd = config.initial_profit_margin_usd
 max_retip_count = config.max_retip_count
 
-trb_price = 0.0
 last_report_time = 0
 
 
 # setup provider
-provider_url = os.getenv("PROVIDER_URL")
+provider_url = config.provider_url
 web3 = Web3(Web3.HTTPProvider(provider_url))
 # set private key
 web3.eth.account.enable_unaudited_hdwallet_features()
-acct = web3.eth.account.privateKeyToAccount(os.getenv("PRIVATE_KEY"))
+acct = web3.eth.account.privateKeyToAccount(config.private_key)
 web3.eth.defaultAccount = acct.address
 print("Connected to Ethereum node: ", web3.isConnected())
+print("Using address: ", web3.eth.defaultAccount)
 print("Current block number: ", web3.eth.blockNumber)
 
 # import playgound abi
@@ -45,6 +45,10 @@ with open("abis/AutoPay.json") as f:
     abi = json.load(f)
 
 autopay_contract = web3.eth.contract(address=config.autopay_address, abi=abi)
+
+print("oracle contract: ", oracle_contract.address)
+print("oracle token contract: ", oracle_token_contract.address)
+print("autopay contract: ", autopay_contract.address)
 
 def get_gas_cost_in_trb():
     # get prices for base token and oracle token
@@ -61,9 +65,9 @@ def get_gas_cost_in_trb():
         print("oracle token price: ", oracle_token_price)
 
         # get gas price
-        response = requests.get("https://ethgasstation.info/json/ethgasAPI.json")
+        response = requests.get("https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken")
         response = response.json()
-        gas_price = response["fast"] / 10
+        gas_price = float(response["result"]["FastGasPrice"])
         print("gas price: ", gas_price)
 
         # convert gas cost to oracle token: gas_price * gas_cost * base_token_price / oracle_price
@@ -90,8 +94,8 @@ def get_required_tip(try_count):
     (gas_cost_trb, trb_price) = get_gas_cost_in_trb()
 
     # handle api errors with limited retries
-    api_max_tries = 10
-    api_try_count = 0
+    api_max_tries = config.api_max_tries
+    api_try_count = 1
     while trb_price == 0.0 and api_try_count < api_max_tries:
         print("trb price is 0, trying again in 10 seconds")
         time.sleep(2 * api_try_count)
@@ -117,10 +121,30 @@ def update_last_report_time():
     last_report_time = int(data_before[2])
     print("last report time: ", last_report_time)
 
-def initiate_tipping_sequence(retip_count):
-    # gas_cost_trb = get_gas_cost_in_trb()
-    # print("gas cost in trb: ", gas_cost_trb)
+def tip(amount_to_tip):
+    print("tipping: ", amount_to_tip)
+    # build transaction 
+    tx = autopay_contract.functions.tip(query_id, int(amount_to_tip), query_data).buildTransaction()
 
+    # get gas estimate
+    gas_estimate = web3.eth.estimateGas(tx)
+    print("gas estimate: ", gas_estimate)
+
+    # update transaction with gas estimate
+    tx.update({'gas': gas_estimate})
+
+    # update nonce
+    tx.update({'nonce': web3.eth.getTransactionCount(acct.address)})
+
+    # sign transaction
+    signed_tx = web3.eth.account.signTransaction(tx, private_key=config.private_key)
+    tx_hash = web3.eth.sendRawTransaction(signed_tx.rawTransaction)
+    print("tx hash: ", tx_hash.hex())
+    # wait for transaction to be mined
+    tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
+
+
+def initiate_tipping_sequence(retip_count):
     # calculate required tip
     required_tip = get_required_tip(retip_count)
     print("required tip: ", required_tip)
@@ -133,28 +157,37 @@ def initiate_tipping_sequence(retip_count):
     current_tip = autopay_contract.functions.getCurrentTip(query_id).call()
     print("current tip: ", current_tip / 1e18)
 
-    # check if current tip is less than required tip
+    # call getDataBefore function, check for new report since tipping sequence started
+    current_time = datetime.datetime.now()
+    data_before = oracle_contract.functions.getDataBefore(query_id, int(current_time.timestamp())).call()
+    last_report_time_updated = int(data_before[2])
+    print("last report time updated: ", last_report_time_updated)
+    print("last report time: ", last_report_time)
+
+    # check if current tip is less than required tip and last report time has not changed
     amount_to_tip = 0
-    if current_tip < (required_tip * 1e18):
+    if current_tip < (required_tip * 1e18) and last_report_time_updated == last_report_time:
         # calculate tip amount
         amount_to_tip = (required_tip * 1e18) - current_tip
         print("tip amount: ", amount_to_tip / 1e18)
 
-        # call tip function
-        tx_hash = autopay_contract.functions.tip(query_id, int(amount_to_tip), query_data).transact()
-        print("Transaction hash: ", tx_hash)
+        # # call tip function
+        # tx_hash = autopay_contract.functions.tip(query_id, int(amount_to_tip), query_data).transact()
+        # print("Transaction hash: ", tx_hash)
 
-        # wait for transaction to be mined
-        web3.eth.waitForTransactionReceipt(tx_hash)
+        # # wait for transaction to be mined
+        # web3.eth.wait_for_transaction_receipt(tx_hash)
+
+        # call tip function
+        tip(amount_to_tip)
 
     # wait 20 seconds
     print("sleeping...")
-    time.sleep(20)
+    time.sleep(config.retip_delay)
 
-    # get current time
-    current_time = datetime.datetime.now()
 
     # call getDataBefore function
+    current_time = datetime.datetime.now()
     data_before = oracle_contract.functions.getDataBefore(query_id, int(current_time.timestamp())).call()
     last_report_time_updated = int(data_before[2])
     print("last report time updated: ", last_report_time_updated)
@@ -171,19 +204,38 @@ def initiate_tipping_sequence(retip_count):
     else:
         print("new data reported")
 
-
-            
+def approve_token():
+    print("approving token")
+    tx = oracle_token_contract.functions.approve(autopay_contract.address, int(config.token_approval_amount)).build_transaction()
+    # get gas estimate
+    gas_estimate = web3.eth.estimate_gas(tx)
+    print("gas estimate: ", gas_estimate)
+    # update transaction with appropriate gas amount
+    tx.update({ 'gas' : gas_estimate })
+    tx.update({ 'nonce' : web3.eth.get_transaction_count(acct.address) })
+    signed_tx = web3.eth.account.sign_transaction(tx, config.private_key)
+    tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    print("Transaction hash: ", tx_hash)
+    # wait for transaction to be mined
+    web3.eth.wait_for_transaction_receipt(tx_hash)
 
 while True:
-
     update_last_report_time()
     seconds_until_next_interval = get_seconds_until_next_interval()
+    current_timestamp = datetime.datetime.now().timestamp()
 
-    if seconds_until_next_interval < 60: # and int(last_report_time) < int(start_time.timestamp()):
+
+    if seconds_until_next_interval < 60 and int(last_report_time) < int(current_timestamp) - int(config.interval / 10):
         # initiate tipping sequence
-        print("initiating tipping sequence")
+        print("\ninitiating tipping sequence")
         initiate_tipping_sequence(retip_count = 0)
     else:
+        # check token allowance
+        token_allowance = oracle_token_contract.functions.allowance(acct.address, autopay_contract.address).call()
+        print("token allowance: ", token_allowance)
+        if token_allowance < config.token_approval_amount / 10:
+            # approve token allowance
+            approve_token()
         # sleep until next interval
         time.sleep(seconds_until_next_interval / 2 + 1)
 
