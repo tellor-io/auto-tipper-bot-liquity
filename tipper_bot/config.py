@@ -32,8 +32,6 @@ else:
     print("invalid network")
 
 
-
-
 # can change these values or leave them as is
 start_time = datetime.datetime(2022, 12, 1, 0, 0, 0) # start time for the first interval
 initial_profit_margin_usd = 2.0 # usd

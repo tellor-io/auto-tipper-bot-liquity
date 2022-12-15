@@ -1,2 +1,2 @@
 [console_scripts]
-autopay = fundfeed.cli.main:main
+tipper = tipper_bot.simple_tipper:main

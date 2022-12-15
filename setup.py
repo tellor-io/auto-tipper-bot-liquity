@@ -10,13 +10,14 @@ def read_requirements():
 
 
 setup(
-    name='tipper-bot',
+    name='tipper_bot',
     version='0.1.0',
     packages=find_packages(),
-    include_package_date=True,
     install_requires=read_requirements(),
-    entry_points="""
-        [console_scripts]
-        autopay=fundfeed.cli.main:main
-    """,
+    # Other setup options here
+    entry_points={
+        'console_scripts': [
+            'tipper=tipper_bot.simple_tipper:main'
+        ],
+    }
 )
