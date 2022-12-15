@@ -1,0 +1,2 @@
+[console_scripts]
+autopay = fundfeed.cli.main:main

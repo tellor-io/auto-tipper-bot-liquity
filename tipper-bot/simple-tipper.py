@@ -50,7 +50,7 @@ print("oracle contract: ", oracle_contract.address)
 print("oracle token contract: ", oracle_token_contract.address)
 print("autopay contract: ", autopay_contract.address)
 
-def get_gas_cost_in_trb():
+def get_gas_cost_in_oracle_token():
     # get prices for base token and oracle token
     try:
         response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
@@ -91,7 +91,7 @@ def get_seconds_until_next_interval():
 
 # function for getting required tip
 def get_required_tip(try_count):
-    (gas_cost_trb, trb_price) = get_gas_cost_in_trb()
+    (gas_cost_trb, trb_price) = get_gas_cost_in_oracle_token()
 
     # handle api errors with limited retries
     api_max_tries = config.api_max_tries
@@ -99,7 +99,7 @@ def get_required_tip(try_count):
     while trb_price == 0.0 and api_try_count < api_max_tries:
         print("trb price is 0, trying again in 10 seconds")
         time.sleep(2 * api_try_count)
-        (gas_cost_trb, trb_price) = get_gas_cost_in_trb()
+        (gas_cost_trb, trb_price) = get_gas_cost_in_oracle_token()
         api_try_count += 1
 
 

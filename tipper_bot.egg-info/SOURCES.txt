@@ -1,0 +1,8 @@
+README.md
+setup.py
+tipper_bot.egg-info/PKG-INFO
+tipper_bot.egg-info/SOURCES.txt
+tipper_bot.egg-info/dependency_links.txt
+tipper_bot.egg-info/entry_points.txt
+tipper_bot.egg-info/requires.txt
+tipper_bot.egg-info/top_level.txt
