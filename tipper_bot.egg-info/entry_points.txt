@@ -1,2 +1,0 @@
-[console_scripts]
-tipper = tipper_bot.simple_tipper:main
