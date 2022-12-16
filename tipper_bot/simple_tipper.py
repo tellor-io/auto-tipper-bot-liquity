@@ -30,6 +30,7 @@ web3.eth.account.enable_unaudited_hdwallet_features()
 acct = web3.eth.account.privateKeyToAccount(config.private_key)
 web3.eth.defaultAccount = acct.address
 print("Connected to Ethereum node: ", web3.isConnected())
+print("Using network: ", config.network)
 print("Using address: ", web3.eth.defaultAccount)
 print("Current block number: ", web3.eth.blockNumber)
 
@@ -55,24 +56,24 @@ print("autopay contract: ", autopay_contract.address)
 def get_gas_cost_in_oracle_token():
     # get prices for base token and oracle token
     try:
-        response = requests.get(
-            "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
-        response = response.json()
-        base_token_price = response["ethereum"]["usd"]
+        response_base_token = requests.get(
+            config.base_token_price_url)
+        response_json_base_token = response_base_token.json()
+        base_token_price = response_json_base_token[config.base_token_price_url_selector]["usd"]
         print("base token price: ", base_token_price)
 
-        response = requests.get(
-            "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd")
-        response = response.json()
-        oracle_token_price = response["tellor"]["usd"]
+        response_oracle_token = requests.get(
+            config.oracle_token_price_url)
+        response_json_oracle_token = response_oracle_token.json()
+        oracle_token_price = response_json_oracle_token[config.oracle_token_price_url_selector]["usd"]
         trb_price = oracle_token_price
         print("oracle token price: ", oracle_token_price)
 
         # get gas price
-        response = requests.get(
-            "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken")
-        response = response.json()
-        gas_price = float(response["result"]["FastGasPrice"])
+        response_gas_price = requests.get(
+            config.gas_price_url)
+        response_json_gas_price = response_gas_price.json()
+        gas_price = float(response_json_gas_price["result"]["FastGasPrice"])
         print("gas price: ", gas_price)
 
         # convert gas cost to oracle token: gas_price * gas_cost * base_token_price / oracle_price
@@ -137,19 +138,32 @@ def update_last_report_time():
 
 def tip(amount_to_tip):
     print("tipping: ", amount_to_tip)
+    print("here")
     # build transaction
-    tx = autopay_contract.functions.tip(query_id, int(
-        amount_to_tip), query_data).buildTransaction()
 
-    # get gas estimate
-    gas_estimate = web3.eth.estimateGas(tx)
-    print("gas estimate: ", gas_estimate)
+    try:
+        tx = autopay_contract.functions.tip(query_id, int(
+            amount_to_tip), query_data).buildTransaction()
+        print("tx: ", tx)
+        # get gas estimate
+        gas_estimate = web3.eth.estimateGas(tx)
+        print("gas estimate: ", gas_estimate)
 
-    # update transaction with gas estimate
-    tx.update({'gas': gas_estimate})
+        # update transaction with gas estimate
+        tx.update({'gas': gas_estimate})
 
-    # update nonce
-    tx.update({'nonce': web3.eth.getTransactionCount(acct.address)})
+        # update nonce
+        tx.update({'nonce': web3.eth.getTransactionCount(acct.address)})
+    except:
+        print("error building transaction")
+        print("building legacy transaction")
+        tx = autopay_contract.functions.tip(query_id, int(
+            amount_to_tip), query_data).buildTransaction({
+                'gasPrice': web3.eth.gas_price,
+                'nonce': web3.eth.getTransactionCount(acct.address),
+                # 'gas': gas_estimate,
+        })
+        
 
     # sign transaction
     signed_tx = web3.eth.account.signTransaction(
@@ -224,14 +238,24 @@ def approve_token():
     if token_allowance < config.token_approval_amount / 10:
         # approve token allowance
         print("approving token")
-        tx = oracle_token_contract.functions.approve(autopay_contract.address, int(
-            config.token_approval_amount)).build_transaction()
-        # get gas estimate
-        gas_estimate = web3.eth.estimate_gas(tx)
-        print("gas estimate: ", gas_estimate)
-        # update transaction with appropriate gas amount
-        tx.update({'gas': gas_estimate})
-        tx.update({'nonce': web3.eth.get_transaction_count(acct.address)})
+        try:
+            tx = oracle_token_contract.functions.approve(autopay_contract.address, int(
+                config.token_approval_amount)).build_transaction()
+            # get gas estimate
+            gas_estimate = web3.eth.estimate_gas(tx)
+            print("gas estimate: ", gas_estimate)
+            # update transaction with appropriate gas amount
+            tx.update({'gas': gas_estimate})
+            tx.update({'nonce': web3.eth.get_transaction_count(acct.address)})
+        except:
+            print("error building transaction")
+            print("building legacy transaction")
+            tx = oracle_token_contract.functions.approve(autopay_contract.address, int(
+                config.token_approval_amount)).buildTransaction({
+                    'gasPrice': web3.eth.gas_price,
+                    'nonce': web3.eth.getTransactionCount(acct.address),
+                    # 'gas': gas_estimate,
+            })
         signed_tx = web3.eth.account.sign_transaction(tx, config.private_key)
         tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
         print("Transaction hash: ", tx_hash)
