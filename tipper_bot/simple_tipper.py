@@ -12,9 +12,9 @@ load_dotenv()
 
 # load config values
 start_time = config.start_time
-interval = config.interval
-query_id = config.query_id
-query_data = config.query_data
+# interval = config.interval
+# query_id = config.query_id
+# query_data = config.query_data
 tip_multiplier = config.tip_multiplier
 initial_profit_margin_usd = config.initial_profit_margin_usd
 max_retip_count = config.max_retip_count
@@ -85,7 +85,7 @@ def get_gas_cost_in_oracle_token():
         return (0.0, 0.0)
 
 # function for determining number of seconds until next interval
-def get_seconds_until_next_interval():
+def get_seconds_until_next_interval(interval):
     current_time = datetime.datetime.now()
     next_interval = start_time + datetime.timedelta(seconds=interval)
     # get next interval after current time
@@ -122,21 +122,22 @@ def get_required_tip(try_count):
     return required_tip
 
 
-def update_last_report_time():
+def get_last_report_time(query_id):
     current_time = datetime.datetime.now()
     print("current time: ", current_time.timestamp())
     try:
         data_before = oracle_contract.functions.getDataBefore(
             query_id, int(current_time.timestamp())).call()
-        global last_report_time
+        last_report_time
         last_report_time = int(data_before[2])
         print("last report time: ", last_report_time)
+        return last_report_time
     except:
         print("error getting data before")
-        return
+        return 0
 
 
-def tip(amount_to_tip):
+def tip(amount_to_tip, query_id, query_data):
     print("tipping: ", amount_to_tip)
     print("here")
     # build transaction
@@ -174,7 +175,7 @@ def tip(amount_to_tip):
     web3.eth.waitForTransactionReceipt(tx_hash)
 
 
-def initiate_tipping_sequence(retip_count):
+def initiate_tipping_sequence(retip_count, query_id, query_data):
     # calculate required tip
     required_tip = get_required_tip(retip_count)
     print("required tip: ", required_tip)
@@ -203,31 +204,31 @@ def initiate_tipping_sequence(retip_count):
         print("tip amount: ", amount_to_tip / 1e18)
 
         # call tip function
-        tip(amount_to_tip)
+        tip(amount_to_tip, query_id, query_data)
 
-    # wait 20 seconds
-    print("sleeping...")
-    time.sleep(config.retip_delay)
+        # wait 20 seconds
+        print("sleeping...")
+        time.sleep(config.retip_delay)
 
-    # call getDataBefore function
-    current_time = datetime.datetime.now()
-    data_before = oracle_contract.functions.getDataBefore(
-        query_id, int(current_time.timestamp())).call()
-    last_report_time_updated = int(data_before[2])
-    print("last report time updated: ", last_report_time_updated)
-    print("last report time: ", last_report_time)
+        # call getDataBefore function
+        current_time = datetime.datetime.now()
+        data_before = oracle_contract.functions.getDataBefore(
+            query_id, int(current_time.timestamp())).call()
+        last_report_time_updated = int(data_before[2])
+        print("last report time updated: ", last_report_time_updated)
+        print("last report time: ", last_report_time)
 
-    # check if data is available
-    if last_report_time_updated <= int(last_report_time):
-        print("no new data reported")
-        # check if try count is less than max try count
-        if retip_count < max_retip_count:
-            # initiate tipping sequence again
-            print("try count ", retip_count,
-                  " is less than max try count ", max_retip_count)
-            initiate_tipping_sequence(retip_count + 1)
-    else:
-        print("new data reported")
+        # check if data is available
+        if last_report_time_updated <= int(last_report_time):
+            print("no new data reported")
+            # check if try count is less than max try count
+            if retip_count < max_retip_count:
+                # initiate tipping sequence again
+                print("try count ", retip_count,
+                    " is less than max try count ", max_retip_count)
+                initiate_tipping_sequence(retip_count + 1, query_id, query_data)
+        else:
+            print("new data reported")
 
 
 def approve_token():
@@ -264,22 +265,24 @@ def approve_token():
 
 
 def main():
+    query_id = config.query_id
+    query_data = config.query_data
+    interval = config.interval
+
     approve_token()
     while True:
-        update_last_report_time()
-        seconds_until_next_interval = get_seconds_until_next_interval()
+        last_report_time = get_last_report_time(query_id=query_id)
+        seconds_until_next_interval = get_seconds_until_next_interval(interval=interval)
         current_timestamp = datetime.datetime.now().timestamp()
-
-        if seconds_until_next_interval < 60 and int(last_report_time) < int(current_timestamp) - int(config.interval / 10):
+        if seconds_until_next_interval < 60 and int(last_report_time) < int(current_timestamp) - int(interval / 10):
             # initiate tipping sequence
             print("\ninitiating tipping sequence")
-            initiate_tipping_sequence(retip_count=0)
+            initiate_tipping_sequence(retip_count=0, query_id=query_id, query_data=query_data)
         else:
-            # check token allowance, approve if necessary
             approve_token()
             # sleep until next interval
             print("sleeping until next interval")
-            time.sleep(seconds_until_next_interval / 2 + 1)
+            time.sleep(seconds_until_next_interval / 2)
 
     return None
 
