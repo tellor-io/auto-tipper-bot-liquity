@@ -1,6 +1,6 @@
 # Auto Tipper Bot
 
-This is a bot for automatically tipping a query id at a fixed interval. It is a work in progress and is not yet ready for use. It can currently tip a query id on Goerli at a fixed interval, wait for a data report, and increase the tip a max number of times until a report is submitted.
+This is a bot for automatically tipping a query id at a fixed interval. It can tip a query id on Ethereum mainnet, Polygon, Goerli, or Mumbai at a fixed interval, wait for a data report, and increase the tip a max number of times until a report is submitted.
 
 ### Clone repo and cd
 ```sh
@@ -26,8 +26,12 @@ source venv/bin/activate
 pip install -e .
 ```
 
+```sh
+mv .env.example .env
+```
+
 ### Usage
-Add your private key and Goerli rpc url to `.env` file. Update the `query_id`, `query_data`, and `interval` in the `tipper_bot/config.py` file. 
+Add your private key and rpc url to `.env` file. Also update the `QUERY_ID`, `QUERY_DATA`, and `INTERVAL` to your desired values.
 
 **To begin tipping**
 ```sh
@@ -44,4 +48,4 @@ Check out our issues log here on Github or feel free to reach out anytime [info@
 
 ## Copyright
 
-Tellor Inc. 2022
+Tellor Inc. 2023
