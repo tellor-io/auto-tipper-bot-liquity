@@ -26,12 +26,8 @@ source venv/bin/activate
 pip install -e .
 ```
 
-```sh
-mv .env.example .env
-```
-
 ### Usage
-Add your private key and rpc url to `.env` file. Also update the `QUERY_ID`, `QUERY_DATA`, and `INTERVAL` to your desired values.
+Add your private key and rpc url to `.env` file. Update the `QUERY_ID`, `QUERY_DATA`, and `INTERVAL` to your desired values.
 
 **To begin tipping**
 ```sh
