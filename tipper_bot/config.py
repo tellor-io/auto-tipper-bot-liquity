@@ -12,9 +12,9 @@ interval = int(os.getenv("INTERVAL")) # in seconds
 
 if network == "mainnet":
     provider_url = os.getenv("PROVIDER_URL_MAINNET")
-    oracle_address = "0xB3B662644F8d3138df63D2F43068ea621e2981f9"
+    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
     oracle_token_address = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
-    autopay_address = "0x1F033Cb8A2Df08a147BC512723fd0da3FEc5cCA7"
+    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
     private_key = os.getenv("MAINNET_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
@@ -23,9 +23,9 @@ if network == "mainnet":
     gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
 elif network == "goerli":
     provider_url = os.getenv("PROVIDER_URL_GOERLI")
-    oracle_address = "0xB3B662644F8d3138df63D2F43068ea621e2981f9"
+    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
     oracle_token_address = "0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2"
-    autopay_address = "0x1F033Cb8A2Df08a147BC512723fd0da3FEc5cCA7"
+    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
     private_key = os.getenv("GOERLI_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
@@ -45,9 +45,9 @@ elif network == "goerli_playground":
     gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
 elif network == "polygon":
     provider_url = os.getenv("PROVIDER_URL_POLYGON")
-    oracle_address = "0x8f55D884CAD66B79e1a131f6bCB0e66f4fD84d5B"
+    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
     oracle_token_address = "0xE3322702BEdaaEd36CdDAb233360B939775ae5f1"
-    autopay_address = "0x1775704809521D4D7ee65B6aFb93816af73476ec"
+    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
     private_key = os.getenv("POLYGON_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
@@ -56,9 +56,9 @@ elif network == "polygon":
     gas_price_url = "https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
 elif network == "mumbai":
     provider_url = os.getenv("PROVIDER_URL_MUMBAI")
-    oracle_address = "0x8f55D884CAD66B79e1a131f6bCB0e66f4fD84d5B"
+    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
     oracle_token_address = "0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE"
-    autopay_address = "0x1775704809521D4D7ee65B6aFb93816af73476ec"
+    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
     private_key = os.getenv("MUMBAI_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
