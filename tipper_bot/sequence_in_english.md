@@ -1,0 +1,17 @@
+# sequence in english
+- get params (queryid, querydata, interval, start_time)
+- approve token (if insufficient approval)
+- if more than 60 seconds until next interval or last tip was less than `interval/10` seconds ago, wait:
+  - approve token
+  - sleep for `seconds_until_next_interval / 2` (asymptotically approach next interval)
+- else, `initiate_tipping_sequence` with params `retip_count`, `query_id`, `query_data`, `last_report_time`:
+  - calculate `required_tip` (gas cost + buffer) * tip_multiplier ** try_count
+  - read current available tip amount from autopay contract
+  - get updated time of last report from oracle
+  - if available tip is less than required tip and no new report has been submitted since start of tipping sequence, add a tip:
+    - amount to tip equals difference between available tip and required tip
+    - tip
+    - sleep for 45 seconds (or retip_delay seconds)
+    - check for new report
+    - if new data, end tipping sequence
+    - if no new data and retip count is less than max retip count, increment retip count and repeat tipping sequence
