@@ -71,9 +71,16 @@ with open("abis/AutoPay.json") as f:
 
 autopay_contract = web3.eth.contract(address=config.autopay_address, abi=abi)
 
+# import Chainlink Aggregator abi
+with open("abis/EACAggregatorProxy.json") as f:
+    abi = json.load(f)
+
+chainlink_agg_contract = web3.eth.contract(address=config.chainlink_aggregator_address, abi=abi)
+
 logging.info("oracle contract: %s", oracle_contract.address)
 logging.info("oracle token contract: %s", oracle_token_contract.address)
 logging.info("autopay contract: %s", autopay_contract.address)
+logging.info("chainlink aggregator contract: %s", chainlink_agg_contract.address)
 
 
 def get_gas_cost_in_oracle_token():
@@ -311,7 +318,37 @@ def approve_token_and_check_balance():
     logging.info("%s token balance: %s", config.base_token_price_url_selector, base_token_balance / 1e18)
     return [oracle_token_balance, base_token_balance]
 
+def get_chainlink_latest_round_data():
+    try:
+        latest_round_data = chainlink_agg_contract.functions.latestRoundData().call()
+        return latest_round_data
+    except:
+        logging.warning("error getting chainlink round data")
+        return 0
 
+def chainlink_is_frozen(chainlink_latest_round_data):
+    # block.timestamp - response.timestamp > TIMEOUT
+    current_timestamp = datetime.datetime.now().timestamp()
+    latest_timestamp = chainlink_latest_round_data[3]
+    if current_timestamp - latest_timestamp > config.chainlink_is_frozen_timeout:
+        logging.info("chainlink is almost frozen. latest timestamp: %s", latest_timestamp)
+        return True
+    else:
+        return False
+
+def chainlink_is_broken(chainlink_latest_round_data):
+    current_timestamp = datetime.datetime.now().timestamp()
+    round_id = chainlink_latest_round_data[0]
+    updated_at = chainlink_latest_round_data[3]
+    answer = chainlink_latest_round_data[1]
+    if int(round_id) == 0:
+        return True
+    if int(updated_at) == 0 or int(updated_at) > current_timestamp:
+        return True
+    if int(answer) == 0:
+        return True
+    # chainlink is not broken
+    return False
 
 def main():
     query_id = config.query_id
@@ -324,14 +361,27 @@ def main():
         last_report_time = get_last_report_time(query_id=query_id)
         seconds_until_next_interval = get_seconds_until_next_interval(interval=interval, start_time=start_time)
         current_timestamp = datetime.datetime.now().timestamp()
-        init_tip_bool = True
+        seconds_since_last_tellor_report = current_timestamp - int(last_report_time)
+        chainlink_latest_round_data = get_chainlink_latest_round_data()
+        sufficient_funds_bool = True
+        report_for_backup_oracle = False
+        seconds_since_last_tellor_report_is_sufficient = False
         if balances[0] == 0:
             logging.error("zero %s oracle token balance", config.oracle_token_price_url_selector)
-            init_tip_bool = False
+            sufficient_funds_bool = False
         if balances[1] == 0:
             logging.error("zero %s base token balance", config.base_token_price_url_selector)
-            init_tip_bool = False
-        if seconds_until_next_interval < 60 and int(last_report_time) < int(current_timestamp) - int(interval / 10) and init_tip_bool:
+            sufficient_funds_bool = False
+        if chainlink_latest_round_data != 0:
+            if chainlink_is_frozen(chainlink_latest_round_data):
+                logging.info("chainlink is frozen")
+                report_for_backup_oracle = True
+            if chainlink_is_broken(chainlink_latest_round_data):
+                logging.info("chainlink is broken");
+                report_for_backup_oracle = True
+        if seconds_since_last_tellor_report >= config.chainlink_is_frozen_timeout:
+            seconds_since_last_tellor_report_is_sufficient = True
+        if sufficient_funds_bool and report_for_backup_oracle and seconds_since_last_tellor_report_is_sufficient:
             # initiate tipping sequence
             logging.info("initiating tipping sequence")
             initiate_tipping_sequence(retip_count=0, query_id=query_id, query_data=query_data, last_report_time=last_report_time, balances=balances)
@@ -339,9 +389,9 @@ def main():
             balances = approve_token_and_check_balance()
             # sleep until next interval
             logging.info("sleeping until next interval")
-            time.sleep(seconds_until_next_interval / 2)
-
+            time.sleep(seconds_until_next_interval)
     return None
+
 
 
 if __name__ == "__main__":

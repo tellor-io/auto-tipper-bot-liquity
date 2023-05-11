@@ -9,6 +9,7 @@ network = os.getenv("NETWORK") # ganache, goerli, mainnet, mumbai, polygon
 query_id = os.getenv("QUERY_ID")
 query_data = os.getenv("QUERY_DATA")
 interval = int(os.getenv("INTERVAL")) # in seconds
+chainlink_is_frozen_timeout = int(os.getenv("CHAINLINK_IS_FROZEN_TIMEOUT"))
 
 if network == "mainnet":
     provider_url = os.getenv("PROVIDER_URL_MAINNET")
@@ -21,6 +22,7 @@ if network == "mainnet":
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
     base_token_price_url_selector = "ethereum"
     gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "goerli":
     provider_url = os.getenv("PROVIDER_URL_GOERLI")
     oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
@@ -32,6 +34,7 @@ elif network == "goerli":
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
     base_token_price_url_selector = "ethereum"
     gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "goerli_playground":
     provider_url = os.getenv("PROVIDER_URL_GOERLI")
     oracle_address = "0x3251838bd813fdf6a97D32781e011cce8D225d59"
@@ -43,6 +46,7 @@ elif network == "goerli_playground":
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
     base_token_price_url_selector = "ethereum"
     gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "polygon":
     provider_url = os.getenv("PROVIDER_URL_POLYGON")
     oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
@@ -54,6 +58,7 @@ elif network == "polygon":
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd"
     base_token_price_url_selector = "matic-network"
     gas_price_url = "https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "mumbai":
     provider_url = os.getenv("PROVIDER_URL_MUMBAI")
     oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
@@ -65,6 +70,7 @@ elif network == "mumbai":
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd"
     base_token_price_url_selector = "matic-network"
     gas_price_url = "https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
     oracle_address = "0x9985C500268a2dA5dfc9f643125F9f2FD2DEaD68"
@@ -76,6 +82,7 @@ elif network == "ganache":
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
     base_token_price_url_selector = "ethereum"
     gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 else:
     print("invalid network")
 
