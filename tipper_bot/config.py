@@ -67,9 +67,9 @@ elif network == "mumbai":
     gas_price_url = "https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
-    oracle_address = "0xD4aaC57fd0696F5fFF38C622FcA94D7bB722A9fC"
-    oracle_token_address = "0xD4aaC57fd0696F5fFF38C622FcA94D7bB722A9fC"
-    autopay_address = "0xCBC648c91E75E6d5ac7B8ff51aEb62085A0f1F4A"
+    oracle_address = "0x9985C500268a2dA5dfc9f643125F9f2FD2DEaD68"
+    oracle_token_address = "0x9985C500268a2dA5dfc9f643125F9f2FD2DEaD68"
+    autopay_address = "0x0addEeE0a4a5E17bee897CbBE0B57a950d383aBF"
     private_key = os.getenv("GANACHE_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
