@@ -10,6 +10,7 @@ query_id = os.getenv("QUERY_ID")
 query_data = os.getenv("QUERY_DATA")
 interval = int(os.getenv("INTERVAL")) # in seconds
 chainlink_is_frozen_timeout = int(os.getenv("CHAINLINK_IS_FROZEN_TIMEOUT"))
+chainlink_max_price_deviation = float(os.getenv("CHAINLINK_MAX_PRICE_DEVIATION_FROM_PREVIOUS_ROUND"))
 
 if network == "mainnet":
     provider_url = os.getenv("PROVIDER_URL_MAINNET")

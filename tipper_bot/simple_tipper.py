@@ -326,6 +326,30 @@ def get_chainlink_latest_round_data():
         logging.warning("error getting chainlink round data")
         return 0
 
+def get_chainlink_previous_round_data(chainlink_latest_round_data):
+    try:
+        previous_round_data = chainlink_agg_contract.functions.getRoundData(
+            chainlink_latest_round_data[0] - 1).call()
+        return previous_round_data
+    except:
+        logging.warning("error getting chainlink previous round data")
+        return 0
+
+def chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
+    current_price = chainlink_latest_round_data[1]
+    previous_price = chainlink_previous_round_data[1]
+
+    min_price = min(current_price, previous_price)
+    max_price = max(current_price, previous_price)
+
+    percent_deviation = (max_price - min_price) / max_price
+    if percent_deviation > config.chainlink_max_price_deviation:
+        logging.info("chainlink price change above max")
+        return True
+    else:
+        return False
+        
+
 def chainlink_is_frozen(chainlink_latest_round_data):
     # block.timestamp - response.timestamp > TIMEOUT
     current_timestamp = datetime.datetime.now().timestamp()
@@ -342,10 +366,13 @@ def chainlink_is_broken(chainlink_latest_round_data):
     updated_at = chainlink_latest_round_data[3]
     answer = chainlink_latest_round_data[1]
     if int(round_id) == 0:
+        logging.info("chainlink is broken. round id: %s", round_id)
         return True
     if int(updated_at) == 0 or int(updated_at) > current_timestamp:
+        logging.info("chainlink is broken. updated at: %s", updated_at)
         return True
     if int(answer) == 0:
+        logging.info("chainlink is broken. answer: %s", answer)
         return True
     # chainlink is not broken
     return False
@@ -363,6 +390,7 @@ def main():
         current_timestamp = datetime.datetime.now().timestamp()
         seconds_since_last_tellor_report = current_timestamp - int(last_report_time)
         chainlink_latest_round_data = get_chainlink_latest_round_data()
+        # bools must all be true to report
         sufficient_funds_bool = True
         report_for_backup_oracle = False
         seconds_since_last_tellor_report_is_sufficient = False
@@ -374,11 +402,13 @@ def main():
             sufficient_funds_bool = False
         if chainlink_latest_round_data != 0:
             if chainlink_is_frozen(chainlink_latest_round_data):
-                logging.info("chainlink is frozen")
                 report_for_backup_oracle = True
             if chainlink_is_broken(chainlink_latest_round_data):
-                logging.info("chainlink is broken");
                 report_for_backup_oracle = True
+            chainlink_previous_round_data = get_chainlink_previous_round_data(chainlink_latest_round_data)
+            if chainlink_previous_round_data != 0:
+                if chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
+                    report_for_backup_oracle = True
         if seconds_since_last_tellor_report >= config.chainlink_is_frozen_timeout:
             seconds_since_last_tellor_report_is_sufficient = True
         if sufficient_funds_bool and report_for_backup_oracle and seconds_since_last_tellor_report_is_sufficient:
