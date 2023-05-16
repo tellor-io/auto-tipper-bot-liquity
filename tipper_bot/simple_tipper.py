@@ -11,6 +11,9 @@ import logging
 
 load_dotenv()
 
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='logs/tipper.log', filemode='a')
 
 # Create a logger object
@@ -419,7 +422,7 @@ def main():
             balances = approve_token_and_check_balance()
             # sleep until next interval
             logging.info("sleeping until next interval")
-            time.sleep(seconds_until_next_interval)
+            time.sleep(seconds_until_next_interval + 1)
     return None
 
 
