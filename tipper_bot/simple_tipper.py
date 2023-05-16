@@ -69,7 +69,7 @@ oracle_token_contract = web3.eth.contract(
     address=config.oracle_token_address, abi=abi)
 
 # import autopay abi
-with open("abis/AutoPay.json") as f:
+with open("abis/Autopay.json") as f:
     abi = json.load(f)
 
 autopay_contract = web3.eth.contract(address=config.autopay_address, abi=abi)
