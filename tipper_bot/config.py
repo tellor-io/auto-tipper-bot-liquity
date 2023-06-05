@@ -94,7 +94,7 @@ initial_profit_margin_usd = 2.0 # usd
 tip_multiplier = 1.10 # multiplier for each tip retry
 max_retip_count = 10 # max number of times to retry a tip
 retip_delay = 45 # seconds
-total_gas_cost=2000000 # cost of submitValue + claimTip
+total_gas_cost=700000 # cost of submitValue + claimTip
 api_max_tries = 10 # max number of times to retry api calls
 token_approval_amount = 1000e18 # amount of oracle token to approve for autopay contract
 
