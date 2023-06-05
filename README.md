@@ -4,7 +4,7 @@ This is a bot for automatically detecting when the Tellor backup oracle will be 
 
 ### Clone repo and cd
 ```sh
-git clone https://github.com/tellor-io/auto-tipper-bot.git
+git clone -b liquity-backup --single-branch https://github.com/tellor-io/auto-tipper-bot.git
 ```
 ```sh
 cd auto-tipper-bot
