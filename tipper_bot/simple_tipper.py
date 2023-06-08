@@ -102,18 +102,21 @@ def get_gas_cost_in_oracle_token():
         trb_price = oracle_token_price
         logging.info("oracle token price: %s", oracle_token_price)
 
-        # get gas price
-        response_gas_price = requests.get(
-            config.gas_price_url)
-        response_json_gas_price = response_gas_price.json()
-        gas_price = float(response_json_gas_price["result"]["FastGasPrice"])
-        logging.info("gas price: %s", gas_price)
+        if config.network != 'optimism' and config.network != 'optimism-goerli':
+            # get gas price
+            response_gas_price = requests.get(
+                config.gas_price_url)
+            response_json_gas_price = response_gas_price.json()
+            gas_price = float(response_json_gas_price["result"]["FastGasPrice"])
+            logging.info("gas price: %s", gas_price)
 
-        # convert gas cost to oracle token: gas_price * gas_cost * base_token_price / oracle_price
-        gas_cost_usd = config.total_gas_cost * gas_price * base_token_price / 1000000000
+            gas_cost_usd = config.total_gas_cost * gas_price * base_token_price / 1000000000
+        else:
+            # optimism uses custom gas cost calculation logic, just hardcode for now
+            gas_cost_usd = 0.5
         logging.info("gas cost in usd: %s", gas_cost_usd)
-        gas_cost_oracle_token = gas_price * config.total_gas_cost * \
-            base_token_price / oracle_token_price / 1000000000
+        # convert gas cost to oracle token: gas_price * gas_cost * base_token_price / oracle_price
+        gas_cost_oracle_token = gas_cost_usd / oracle_token_price
         return (gas_cost_oracle_token, trb_price)
     except:
         logging.error("error getting gas cost in TRB")

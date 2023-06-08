@@ -72,6 +72,30 @@ elif network == "mumbai":
     base_token_price_url_selector = "matic-network"
     gas_price_url = "https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
     chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
+elif network == "optimism":
+    provider_url = os.getenv("PROVIDER_URL_OPTIMISM")
+    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
+    oracle_token_address = "0xaf8cA653Fa2772d58f4368B0a71980e9E3cEB888"
+    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
+    private_key = os.getenv("OPTIMISM_PK")
+    oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
+    oracle_token_price_url_selector = "tellor"
+    base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    base_token_price_url_selector = "ethereum"
+    gas_price_url = "https://api-optimistic.etherscan.io/api?module=proxy&action=eth_gasPrice&apikey=YourApiKeyToken" # not used
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
+elif network == "optimism-goerli":
+    provider_url = os.getenv("PROVIDER_URL_OPTIMISM_GOERLI")
+    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
+    oracle_token_address = "0xd71F72C18767083e4e3FE84F9c62b8038C1Ef4f6"
+    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
+    private_key = os.getenv("OPTIMISM_GOERLI_PK")
+    oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
+    oracle_token_price_url_selector = "tellor"
+    base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    base_token_price_url_selector = "ethereum"
+    gas_price_url = "https://api-optimistic.etherscan.io/api?module=proxy&action=eth_gasPrice&apikey=YourApiKeyToken" # not used
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
     oracle_address = "0x9985C500268a2dA5dfc9f643125F9f2FD2DEaD68"
