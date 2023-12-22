@@ -14,9 +14,9 @@ chainlink_max_price_deviation = float(os.getenv("CHAINLINK_MAX_PRICE_DEVIATION_F
 
 if network == "mainnet":
     provider_url = os.getenv("PROVIDER_URL_MAINNET")
-    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
+    oracle_address = "0x8cFc184c877154a8F9ffE0fe75649dbe5e2DBEbf"
     oracle_token_address = "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
-    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
+    autopay_address = "0x3b50dEc3CA3d34d5346228D86D29CF679EAA0Ccb"
     private_key = os.getenv("MAINNET_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
@@ -30,6 +30,18 @@ elif network == "goerli":
     oracle_token_address = "0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2"
     autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
     private_key = os.getenv("GOERLI_PK")
+    oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
+    oracle_token_price_url_selector = "tellor"
+    base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    base_token_price_url_selector = "ethereum"
+    gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken"
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
+elif network == "sepolia":
+    provider_url = os.getenv("PROVIDER_URL_SEPOLIA")
+    oracle_address = "0xB19584Be015c04cf6CFBF6370Fe94a58b7A38830"
+    oracle_token_address = "0x80fc34a2f9FfE86F41580F47368289C402DEc660"
+    autopay_address = "0xB59a8085b4C360a3694396CA8E09441052656cF6"
+    private_key = os.getenv("SEPOLIA_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
