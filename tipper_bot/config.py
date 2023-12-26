@@ -11,6 +11,8 @@ query_data = os.getenv("QUERY_DATA")
 interval = int(os.getenv("INTERVAL")) # in seconds
 chainlink_is_frozen_timeout = int(os.getenv("CHAINLINK_IS_FROZEN_TIMEOUT"))
 chainlink_max_price_deviation = float(os.getenv("CHAINLINK_MAX_PRICE_DEVIATION_FROM_PREVIOUS_ROUND"))
+price_change_threshold = float(os.getenv("PRICE_CHANGE_THRESHOLD")) # collateral token price change threshold
+collateral_token_price_url = os.getenv("COLLATERAL_TOKEN_PRICE_URL_COINGECKO")
 
 if network == "mainnet":
     provider_url = os.getenv("PROVIDER_URL_MAINNET")
@@ -110,9 +112,9 @@ elif network == "optimism-goerli":
     chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
-    oracle_address = "0x9985C500268a2dA5dfc9f643125F9f2FD2DEaD68"
-    oracle_token_address = "0x9985C500268a2dA5dfc9f643125F9f2FD2DEaD68"
-    autopay_address = "0x0addEeE0a4a5E17bee897CbBE0B57a950d383aBF"
+    oracle_address = "0x63CF2582cD016e5a00156910c735cF551bd14D72"
+    oracle_token_address = "0x63CF2582cD016e5a00156910c735cF551bd14D72"
+    autopay_address = "0x424F219f446f69B3F9FC80655077A4F7DF289C8B"
     private_key = os.getenv("GANACHE_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"

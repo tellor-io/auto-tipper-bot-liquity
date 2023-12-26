@@ -8,6 +8,7 @@ import datetime
 import os
 from dotenv import load_dotenv
 import logging
+from urllib.parse import urlparse, parse_qs
 
 load_dotenv()
 
@@ -42,11 +43,11 @@ logging.getLogger('').addHandler(console_handler)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
-
 # load config values
 tip_multiplier = config.tip_multiplier
 initial_profit_margin_usd = config.initial_profit_margin_usd
 max_retip_count = config.max_retip_count
+price_change_threshold = config.price_change_threshold
 
 # setup provider
 provider_url = config.provider_url
@@ -341,6 +342,37 @@ def get_chainlink_previous_round_data(chainlink_latest_round_data):
         logging.warning("error getting chainlink previous round data")
         return 0
 
+def extract_selectors(url):
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+    token_selector = query_params.get('ids', [None])[0]
+    currency_selector = query_params.get('vs_currencies', [None])[0]
+    return token_selector, currency_selector
+    
+def collateral_price_change_above_threshold(last_saved_collateral_price):
+    # get collateral price from coingecko
+    try:
+        response = requests.get(
+            config.collateral_token_price_url)
+        response_json = response.json()
+        collateral_token_price_selector, currency_selector = extract_selectors(config.collateral_token_price_url)
+        collateral_token_price = response_json[collateral_token_price_selector][currency_selector]
+        logging.info("collateral token price: %s", collateral_token_price)
+        # check if price change is above threshold
+        if last_saved_collateral_price == 0:
+            last_saved_collateral_price = collateral_token_price
+            return False, last_saved_collateral_price
+        price_change = abs(collateral_token_price - last_saved_collateral_price) / last_saved_collateral_price
+        logging.info("price change: %s", price_change)
+        if price_change >= config.price_change_threshold:
+            logging.info("price change above threshold")
+            return True, last_saved_collateral_price
+        else:
+            return False, last_saved_collateral_price
+    except:
+        logging.warning("error getting collateral token price")
+        return False
+
 def chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
     current_price = chainlink_latest_round_data[1]
     previous_price = chainlink_previous_round_data[1]
@@ -388,6 +420,7 @@ def main():
     query_data = config.query_data
     interval = config.interval
     start_time = config.start_time
+    collateral_token_price = 0
 
     balances = approve_token_and_check_balance()
     while True:
@@ -400,6 +433,9 @@ def main():
         sufficient_funds_bool = True
         report_for_backup_oracle = False
         seconds_since_last_tellor_report_is_sufficient = False
+        collateral_price_change_above_threshold_bool = False
+        if price_change_threshold > 0:
+            collateral_price_change_above_threshold_bool, collateral_token_price = collateral_price_change_above_threshold(collateral_token_price)
         if balances[0] == 0:
             logging.error("zero %s oracle token balance", config.oracle_token_price_url_selector)
             sufficient_funds_bool = False
@@ -417,7 +453,7 @@ def main():
                     report_for_backup_oracle = True
         if seconds_since_last_tellor_report >= config.chainlink_is_frozen_timeout:
             seconds_since_last_tellor_report_is_sufficient = True
-        if sufficient_funds_bool and report_for_backup_oracle and seconds_since_last_tellor_report_is_sufficient:
+        if (sufficient_funds_bool and report_for_backup_oracle) and (seconds_since_last_tellor_report_is_sufficient or collateral_price_change_above_threshold_bool):
             # initiate tipping sequence
             logging.info("initiating tipping sequence")
             initiate_tipping_sequence(retip_count=0, query_id=query_id, query_data=query_data, last_report_time=last_report_time, balances=balances)
