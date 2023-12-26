@@ -27,7 +27,9 @@ pip install -e .
 ```
 
 ### Usage
-Add your private key and rpc url to `.env` file. Update the `QUERY_ID`, `QUERY_DATA`, and `CHAINLINK_AGGREGATOR_ADDRESS`, and `NETWORK` to your desired values.
+Add your private key and rpc url to `.env` file. Update the `QUERY_ID`, `QUERY_DATA`, and `CHAINLINK_AGGREGATOR_ADDRESS`, and `NETWORK` to your desired values. Set the `INTERVAL` based on how often you want the bot to check conditions for adding a tip. 
+
+If you want your bot to tip based on a collateral price change threshold, set the `PRICE_CHANGE_THRESHOLD` to a value greater than 0. A value of `0.05` represents a price change of 5%, for example. Set `COLLATERAL_TOKEN_PRICE_URL_COINGECKO` to the url of the price feed for your collateral token. With this feature enabled, the bot will tip if any of the "Chainlink is down" conditions are met, and the collateral token price changes by more than this threshold. Note that, in the event any of the "Chainlink is down" conditions are met, the bot will also continue to tip in an interval of `CHAINLINK_IS_FROZEN_TIMEOUT`. To disable this feature, set `PRICE_CHANGE_THRESHOLD` to `0`.
 
 **To begin tipping**
 ```sh
