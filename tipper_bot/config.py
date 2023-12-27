@@ -64,9 +64,9 @@ elif network == "goerli_playground":
     chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "polygon":
     provider_url = os.getenv("PROVIDER_URL_POLYGON")
-    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
+    oracle_address = "0x8cFc184c877154a8F9ffE0fe75649dbe5e2DBEbf"
     oracle_token_address = "0xE3322702BEdaaEd36CdDAb233360B939775ae5f1"
-    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
+    autopay_address = "0x11cA06aa780ce89dbBF5D8F5fA8bf6965Be942c9c"
     private_key = os.getenv("POLYGON_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
@@ -76,9 +76,9 @@ elif network == "polygon":
     chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "mumbai":
     provider_url = os.getenv("PROVIDER_URL_MUMBAI")
-    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
-    oracle_token_address = "0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE"
-    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
+    oracle_address = "0xB0ff935b775a70504b810cf97c39987058e18550"
+    oracle_token_address = "0x3251838bd813fdf6a97D32781e011cce8D225d59"
+    autopay_address = "0xBfe8B0b5dBB521bdD1CF8E09432B41eD5328619a"
     private_key = os.getenv("MUMBAI_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
@@ -88,9 +88,9 @@ elif network == "mumbai":
     chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "optimism":
     provider_url = os.getenv("PROVIDER_URL_OPTIMISM")
-    oracle_address = "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
+    oracle_address = "0x8cFc184c877154a8F9ffE0fe75649dbe5e2DBEbf"
     oracle_token_address = "0xaf8cA653Fa2772d58f4368B0a71980e9E3cEB888"
-    autopay_address = "0x9BE9B0CFA89Ea800556C6efbA67b455D336db1D0"
+    autopay_address = "0x3b50dEc3CA3d34d5346228D86D29CF679EAA0Ccb"
     private_key = os.getenv("OPTIMISM_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
