@@ -13,6 +13,9 @@ chainlink_is_frozen_timeout = int(os.getenv("CHAINLINK_IS_FROZEN_TIMEOUT"))
 chainlink_max_price_deviation = float(os.getenv("CHAINLINK_MAX_PRICE_DEVIATION_FROM_PREVIOUS_ROUND"))
 price_change_threshold = float(os.getenv("PRICE_CHANGE_THRESHOLD")) # collateral token price change threshold
 collateral_token_price_url = os.getenv("COLLATERAL_TOKEN_PRICE_URL_COINGECKO")
+api3_feed_address = os.getenv("API3_FEED_ADDRESS")
+api3_max_price_deviation = float(os.getenv("API3_MAX_PRICE_DEVIATION_FROM_PREVIOUS_ROUND"))
+api3_is_frozen_timeout = int(os.getenv("API3_IS_FROZEN_TIMEOUT"))
 
 if network == "mainnet":
     provider_url = os.getenv("PROVIDER_URL_MAINNET")
@@ -110,11 +113,22 @@ elif network == "optimism-goerli":
     base_token_price_url_selector = "ethereum"
     gas_price_url = "https://api-optimistic.etherscan.io/api?module=proxy&action=eth_gasPrice&apikey=YourApiKeyToken" # not used
     chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
+elif network == "mantle":
+    provider_url = os.getenv("PROVIDER_URL_MANTLE")
+    oracle_address = "0x46038969D7DC0b17BC72137D07b4eDe43859DA45"
+    oracle_token_address = "0x35D48A789904E9b15705977192e5d95e2aF7f1D3"
+    autopay_address = "0x6C77f2c171C8cEe08F7A5645c34BB14A29b8532f"
+    private_key = os.getenv("MANTLE_PK")
+    oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
+    oracle_token_price_url_selector = "tellor"
+    base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=mantle&vs_currencies=usd"
+    base_token_price_url_selector = "mantle"
+    gas_price_url = "NA"
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
-    oracle_address = "0x63CF2582cD016e5a00156910c735cF551bd14D72"
-    oracle_token_address = "0x63CF2582cD016e5a00156910c735cF551bd14D72"
-    autopay_address = "0x424F219f446f69B3F9FC80655077A4F7DF289C8B"
+    oracle_address = "0xB568253aD5D232bF8BbF56AFCf505D03D1D42aFf"
+    oracle_token_address = "0xB568253aD5D232bF8BbF56AFCf505D03D1D42aFf"
+    autopay_address = "0x499A0eDDD9B34737E7A809AAb0fa22dc965Eb0E1"
     private_key = os.getenv("GANACHE_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
@@ -128,7 +142,7 @@ else:
 
 # can change these values or leave them as is
 start_time = datetime.datetime(2022, 12, 1, 0, 0, 0) # start time for the first interval
-initial_profit_margin_usd = 2.0 # usd
+initial_profit_margin_usd = 1.0 # usd
 tip_multiplier = 1.10 # multiplier for each tip retry
 max_retip_count = 10 # max number of times to retry a tip
 retip_delay = 45 # seconds

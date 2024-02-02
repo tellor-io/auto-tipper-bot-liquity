@@ -1,0 +1,62 @@
+[
+    {
+        "type": "constructor",
+        "stateMutability": "nonpayable",
+        "inputs": [
+            {
+                "type": "address",
+                "name": "_api3ServerV1",
+                "internalType": "address"
+            },
+            {
+                "type": "bytes32",
+                "name": "_dapiNameHash",
+                "internalType": "bytes32"
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "stateMutability": "view",
+        "outputs": [
+            {
+                "type": "address",
+                "name": "",
+                "internalType": "address"
+            }
+        ],
+        "name": "api3ServerV1",
+        "inputs": []
+    },
+    {
+        "type": "function",
+        "stateMutability": "view",
+        "outputs": [
+            {
+                "type": "bytes32",
+                "name": "",
+                "internalType": "bytes32"
+            }
+        ],
+        "name": "dapiNameHash",
+        "inputs": []
+    },
+    {
+        "type": "function",
+        "stateMutability": "view",
+        "outputs": [
+            {
+                "type": "int224",
+                "name": "value",
+                "internalType": "int224"
+            },
+            {
+                "type": "uint32",
+                "name": "timestamp",
+                "internalType": "uint32"
+            }
+        ],
+        "name": "read",
+        "inputs": []
+    }
+]

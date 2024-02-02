@@ -75,16 +75,15 @@ with open("abis/Autopay.json") as f:
 
 autopay_contract = web3.eth.contract(address=config.autopay_address, abi=abi)
 
-# import Chainlink Aggregator abi
-with open("abis/EACAggregatorProxy.json") as f:
+with open("abis/DapiProxy.json") as f:
     abi = json.load(f)
 
-chainlink_agg_contract = web3.eth.contract(address=config.chainlink_aggregator_address, abi=abi)
+api3_feed_contract = web3.eth.contract(address=config.api3_feed_address, abi=abi)
 
 logging.info("oracle contract: %s", oracle_contract.address)
 logging.info("oracle token contract: %s", oracle_token_contract.address)
 logging.info("autopay contract: %s", autopay_contract.address)
-logging.info("chainlink aggregator contract: %s", chainlink_agg_contract.address)
+logging.info("api3 feed contract: %s", api3_feed_contract.address)
 
 
 def get_gas_cost_in_oracle_token():
@@ -103,7 +102,13 @@ def get_gas_cost_in_oracle_token():
         trb_price = oracle_token_price
         logging.info("oracle token price: %s", oracle_token_price)
 
-        if config.network != 'optimism' and config.network != 'optimism-goerli':
+        if config.network == 'mantle':
+            gas_price = 0.05
+            gas_cost_usd = config.total_gas_cost * gas_price * base_token_price / 1000000000
+        elif config.network == 'optimism' or config.network == 'optimism-goerli':
+            # optimism uses custom gas cost calculation logic, just hardcode for now
+            gas_cost_usd = 0.5
+        else:
             # get gas price
             response_gas_price = requests.get(
                 config.gas_price_url)
@@ -112,9 +117,7 @@ def get_gas_cost_in_oracle_token():
             logging.info("gas price: %s", gas_price)
 
             gas_cost_usd = config.total_gas_cost * gas_price * base_token_price / 1000000000
-        else:
-            # optimism uses custom gas cost calculation logic, just hardcode for now
-            gas_cost_usd = 0.5
+
         logging.info("gas cost in usd: %s", gas_cost_usd)
         # convert gas cost to oracle token: gas_price * gas_cost * base_token_price / oracle_price
         gas_cost_oracle_token = gas_cost_usd / oracle_token_price
@@ -213,8 +216,6 @@ def tip(amount_to_tip, query_id, query_data):
     logging.info("tx hash: %s", tx_hash.hex())
     # wait for transaction to be mined
     web3.eth.waitForTransactionReceipt(tx_hash)
-
-
 
 
 def initiate_tipping_sequence(retip_count, query_id, query_data, last_report_time, balances):
@@ -325,22 +326,20 @@ def approve_token_and_check_balance():
     logging.info("%s token balance: %s", config.base_token_price_url_selector, base_token_balance / 1e18)
     return [oracle_token_balance, base_token_balance]
 
-def get_chainlink_latest_round_data():
+def get_api3_latest_data(latest_data, previous_data):
     try:
-        latest_round_data = chainlink_agg_contract.functions.latestRoundData().call()
-        return latest_round_data
+        latest_data_tmp = api3_feed_contract.functions.read().call()
+        if latest_data == 0:
+            # first time calling this function
+            return latest_data_tmp, latest_data_tmp
+        elif latest_data_tmp[1] == latest_data[1]:
+            # no new data
+            return latest_data, previous_data
+        else:
+            return latest_data_tmp, previous_data
     except:
-        logging.warning("error getting chainlink round data")
-        return 0
-
-def get_chainlink_previous_round_data(chainlink_latest_round_data):
-    try:
-        previous_round_data = chainlink_agg_contract.functions.getRoundData(
-            chainlink_latest_round_data[0] - 1).call()
-        return previous_round_data
-    except:
-        logging.warning("error getting chainlink previous round data")
-        return 0
+        logging.warning("error getting api3 latest data")
+        return 0, 0
 
 def extract_selectors(url):
     parsed_url = urlparse(url)
@@ -373,46 +372,42 @@ def collateral_price_change_above_threshold(last_saved_collateral_price):
         logging.warning("error getting collateral token price")
         return False
 
-def chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
-    current_price = chainlink_latest_round_data[1]
-    previous_price = chainlink_previous_round_data[1]
+def api3_price_change_above_max(latest_data, previous_data):
+    if latest_data == 0 or previous_data == 0:
+        return False
+    current_price = latest_data[0]
+    previous_price = previous_data[0]
 
     min_price = min(current_price, previous_price)
     max_price = max(current_price, previous_price)
 
     percent_deviation = (max_price - min_price) / max_price
-    if percent_deviation > config.chainlink_max_price_deviation:
-        logging.info("chainlink price change above max")
+    if percent_deviation > config.api3_max_price_deviation:
+        logging.info("api3 price change above max")
         return True
     else:
         return False
         
-
-def chainlink_is_frozen(chainlink_latest_round_data):
-    # block.timestamp - response.timestamp > TIMEOUT
+def api3_is_frozen(api3_latest_data):
     current_timestamp = datetime.datetime.now().timestamp()
-    latest_timestamp = chainlink_latest_round_data[3]
-    if current_timestamp - latest_timestamp > config.chainlink_is_frozen_timeout:
-        logging.info("chainlink is almost frozen. latest timestamp: %s", latest_timestamp)
+    latest_timestamp = api3_latest_data[1]
+    if current_timestamp - latest_timestamp > config.api3_is_frozen_timeout:
+        logging.info("api3 is almost frozen. latest timestamp: %s", latest_timestamp)
         return True
     else:
         return False
 
-def chainlink_is_broken(chainlink_latest_round_data):
+def api3_is_broken(api3_latest_data):
     current_timestamp = datetime.datetime.now().timestamp()
-    round_id = chainlink_latest_round_data[0]
-    updated_at = chainlink_latest_round_data[3]
-    answer = chainlink_latest_round_data[1]
-    if int(round_id) == 0:
-        logging.info("chainlink is broken. round id: %s", round_id)
-        return True
+    updated_at = api3_latest_data[1]
+    answer = api3_latest_data[0]
     if int(updated_at) == 0 or int(updated_at) > current_timestamp:
-        logging.info("chainlink is broken. updated at: %s", updated_at)
+        logging.info("api3 is broken. updated at: %s", updated_at)
         return True
     if int(answer) == 0:
-        logging.info("chainlink is broken. answer: %s", answer)
+        logging.info("api3 is broken. answer: %s", answer)
         return True
-    # chainlink is not broken
+    # api3 is not broken
     return False
 
 def main():
@@ -421,6 +416,8 @@ def main():
     interval = config.interval
     start_time = config.start_time
     collateral_token_price = 0
+    api3_latest_data = 0
+    api3_previous_data = 0
 
     balances = approve_token_and_check_balance()
     while True:
@@ -428,7 +425,7 @@ def main():
         seconds_until_next_interval = get_seconds_until_next_interval(interval=interval, start_time=start_time)
         current_timestamp = datetime.datetime.now().timestamp()
         seconds_since_last_tellor_report = current_timestamp - int(last_report_time)
-        chainlink_latest_round_data = get_chainlink_latest_round_data()
+        api3_latest_data, api3_previous_data = get_api3_latest_data(api3_latest_data, api3_previous_data)
         # bools must all be true to report
         sufficient_funds_bool = True
         report_for_backup_oracle = False
@@ -442,16 +439,15 @@ def main():
         if balances[1] == 0:
             logging.error("zero %s base token balance", config.base_token_price_url_selector)
             sufficient_funds_bool = False
-        if chainlink_latest_round_data != 0:
-            if chainlink_is_frozen(chainlink_latest_round_data):
+        if api3_latest_data != 0:
+            if api3_is_frozen(api3_latest_data):
                 report_for_backup_oracle = True
-            if chainlink_is_broken(chainlink_latest_round_data):
+            elif api3_is_broken(api3_latest_data):
                 report_for_backup_oracle = True
-            chainlink_previous_round_data = get_chainlink_previous_round_data(chainlink_latest_round_data)
-            if chainlink_previous_round_data != 0:
-                if chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
-                    report_for_backup_oracle = True
-        if seconds_since_last_tellor_report >= config.chainlink_is_frozen_timeout:
+            elif api3_price_change_above_max(api3_latest_data, api3_previous_data):
+                report_for_backup_oracle = True
+
+        if seconds_since_last_tellor_report >= config.api3_is_frozen_timeout:
             seconds_since_last_tellor_report_is_sufficient = True
         if (sufficient_funds_bool and report_for_backup_oracle) and (seconds_since_last_tellor_report_is_sufficient or collateral_price_change_above_threshold_bool):
             # initiate tipping sequence
