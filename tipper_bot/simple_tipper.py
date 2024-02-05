@@ -287,43 +287,50 @@ def initiate_tipping_sequence(retip_count, query_id, query_data, last_report_tim
         else:
             logging.info("new data reported")
 
-
 def approve_token_and_check_balance():
-    # check token allowance
-    token_allowance = oracle_token_contract.functions.allowance(
-        acct.address, autopay_contract.address).call()
-    logging.info("token allowance: %s", token_allowance)
-    if token_allowance < config.token_approval_amount / 10:
-        # approve token allowance
-        logging.info("approving token amount: %s", config.token_approval_amount)
-        try:
-            tx = oracle_token_contract.functions.approve(autopay_contract.address, int(
-                config.token_approval_amount)).build_transaction()
-            # get gas estimate
-            gas_estimate = web3.eth.estimate_gas(tx)
-            logging.info("gas estimate: %s", gas_estimate)
-            # update transaction with appropriate gas amount
-            tx.update({'gas': gas_estimate})
-            tx.update({'nonce': web3.eth.get_transaction_count(acct.address)})
-        except:
-            print("error building transaction")
-            print("building legacy transaction")
-            tx = oracle_token_contract.functions.approve(autopay_contract.address, int(
-                config.token_approval_amount)).buildTransaction({
-                    'gasPrice': web3.eth.gas_price,
-                    'nonce': web3.eth.getTransactionCount(acct.address),
-                    # 'gas': gas_estimate,
-            })
-        signed_tx = web3.eth.account.sign_transaction(tx, config.private_key)
-        tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        logging.info("transaction hash: %s", tx_hash.hex())
-        # wait for transaction to be mined
-        web3.eth.wait_for_transaction_receipt(tx_hash)
+    # check balances
     oracle_token_balance = oracle_token_contract.functions.balanceOf(
         acct.address).call()
     logging.info("%s token balance: %s", config.oracle_token_price_url_selector, oracle_token_balance / 1e18)
     base_token_balance = web3.eth.get_balance(acct.address)
     logging.info("%s token balance: %s", config.base_token_price_url_selector, base_token_balance / 1e18)
+
+    min_base_token_balance = get_min_base_token_balance()
+    if base_token_balance < min_base_token_balance:
+        logging.error("base token balance is less than minimum required balance")
+        logging.error("min required balance: %s", min_base_token_balance)
+        check_allowance = False
+    else:
+        # check token allowance
+        token_allowance = oracle_token_contract.functions.allowance(
+            acct.address, autopay_contract.address).call()
+        logging.info("token allowance: %s", token_allowance / 1e18)
+        if token_allowance < config.token_approval_amount / 10:
+            # approve token allowance
+            logging.info("approving token amount: %s", config.token_approval_amount)
+            try:
+                tx = oracle_token_contract.functions.approve(autopay_contract.address, int(
+                    config.token_approval_amount)).build_transaction()
+                # get gas estimate
+                gas_estimate = web3.eth.estimate_gas(tx)
+                logging.info("gas estimate: %s", gas_estimate)
+                # update transaction with appropriate gas amount
+                tx.update({'gas': gas_estimate})
+                tx.update({'nonce': web3.eth.get_transaction_count(acct.address)})
+            except:
+                print("error building transaction")
+                print("building legacy transaction")
+                tx = oracle_token_contract.functions.approve(autopay_contract.address, int(
+                    config.token_approval_amount)).buildTransaction({
+                        'gasPrice': web3.eth.gas_price,
+                        'nonce': web3.eth.getTransactionCount(acct.address),
+                        # 'gas': gas_estimate,
+                })
+            signed_tx = web3.eth.account.sign_transaction(tx, config.private_key)
+            tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            logging.info("transaction hash: %s", tx_hash.hex())
+            # wait for transaction to be mined
+            web3.eth.wait_for_transaction_receipt(tx_hash)
     return [oracle_token_balance, base_token_balance]
 
 def get_api3_latest_data(latest_data, previous_data):
@@ -410,6 +417,12 @@ def api3_is_broken(api3_latest_data):
     # api3 is not broken
     return False
 
+def get_min_base_token_balance():
+    gas_cost = config.total_gas_cost
+    gas_price = web3.eth.gas_price
+    min_base_token_balance = gas_cost * gas_price * 4
+    return min_base_token_balance
+
 def main():
     query_id = config.query_id
     query_data = config.query_data
@@ -436,8 +449,9 @@ def main():
         if balances[0] == 0:
             logging.error("zero %s oracle token balance", config.oracle_token_price_url_selector)
             sufficient_funds_bool = False
-        if balances[1] == 0:
-            logging.error("zero %s base token balance", config.base_token_price_url_selector)
+        min_base_token_balance = get_min_base_token_balance()
+        if balances[1] < min_base_token_balance:
+            logging.error("%s base token balance is less than minimum required balance", config.base_token_price_url_selector)
             sufficient_funds_bool = False
         if api3_latest_data != 0:
             if api3_is_frozen(api3_latest_data):
@@ -459,8 +473,6 @@ def main():
             logging.info("sleeping until next interval")
             time.sleep(seconds_until_next_interval + 1)
     return None
-
-
 
 if __name__ == "__main__":
     main()
