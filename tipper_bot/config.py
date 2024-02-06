@@ -128,7 +128,7 @@ elif network == "mantle-goerli":
     oracle_address = "0xf9C672525284C76b9a7e83BE94849Af47624a2dd"
     oracle_token_address = "0x46038969D7DC0b17BC72137D07b4eDe43859DA45"
     autopay_address = "0x10c9042C4BBD61E98bB2b3dfb90d127Be4328Aab"
-    private_key = os.getenv("MANTLE_GOERL_PK")
+    private_key = os.getenv("MANTLE_GOERLI_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=mantle&vs_currencies=usd"
