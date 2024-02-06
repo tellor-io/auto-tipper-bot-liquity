@@ -102,7 +102,7 @@ def get_gas_cost_in_oracle_token():
         trb_price = oracle_token_price
         logging.info("oracle token price: %s", oracle_token_price)
 
-        if config.network == 'mantle':
+        if config.network == 'mantle' or config.network == 'mantle-goerli':
             gas_price = 0.05
             gas_cost_usd = config.total_gas_cost * gas_price * base_token_price / 1000000000
         elif config.network == 'optimism' or config.network == 'optimism-goerli':

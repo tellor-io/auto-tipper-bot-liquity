@@ -4,7 +4,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# update these values
+# can change these values or leave them as is
+start_time = datetime.datetime(2022, 12, 1, 0, 0, 0) # start time for the first interval
+initial_profit_margin_usd = 1.0 # usd
+tip_multiplier = 1.10 # multiplier for each tip retry
+max_retip_count = 10 # max number of times to retry a tip
+retip_delay = 45 # seconds
+total_gas_cost=700000 # cost of submitValue + claimTip
+api_max_tries = 10 # max number of times to retry api calls
+token_approval_amount = 1000e18 # amount of oracle token to approve for autopay contract
+# leave these as-is
 network = os.getenv("NETWORK") # ganache, goerli, mainnet, mumbai, polygon
 query_id = os.getenv("QUERY_ID")
 query_data = os.getenv("QUERY_DATA")
@@ -114,6 +123,17 @@ elif network == "mantle":
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=mantle&vs_currencies=usd"
     base_token_price_url_selector = "mantle"
     gas_price_url = "NA"
+elif network == "mantle-goerli":
+    provider_url = os.getenv("PROVIDER_URL_MANTLE_GOERLI")
+    oracle_address = "0xf9C672525284C76b9a7e83BE94849Af47624a2dd"
+    oracle_token_address = "0x46038969D7DC0b17BC72137D07b4eDe43859DA45"
+    autopay_address = "0x10c9042C4BBD61E98bB2b3dfb90d127Be4328Aab"
+    private_key = os.getenv("MANTLE_GOERL_PK")
+    oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
+    oracle_token_price_url_selector = "tellor"
+    base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=mantle&vs_currencies=usd"
+    base_token_price_url_selector = "mantle"
+    gas_price_url = "NA"
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
     oracle_address = "0xB568253aD5D232bF8BbF56AFCf505D03D1D42aFf"
@@ -128,16 +148,6 @@ elif network == "ganache":
 else:
     print("invalid network")
 
-
-# can change these values or leave them as is
-start_time = datetime.datetime(2022, 12, 1, 0, 0, 0) # start time for the first interval
-initial_profit_margin_usd = 1.0 # usd
-tip_multiplier = 1.10 # multiplier for each tip retry
-max_retip_count = 10 # max number of times to retry a tip
-retip_delay = 45 # seconds
-total_gas_cost=700000 # cost of submitValue + claimTip
-api_max_tries = 10 # max number of times to retry api calls
-token_approval_amount = 1000e18 # amount of oracle token to approve for autopay contract
 
 
 
