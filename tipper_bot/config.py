@@ -13,7 +13,6 @@ chainlink_is_frozen_timeout = int(os.getenv("CHAINLINK_IS_FROZEN_TIMEOUT"))
 chainlink_max_price_deviation = float(os.getenv("CHAINLINK_MAX_PRICE_DEVIATION_FROM_PREVIOUS_ROUND"))
 price_change_threshold = float(os.getenv("PRICE_CHANGE_THRESHOLD")) # collateral token price change threshold
 collateral_token_price_url = os.getenv("COLLATERAL_TOKEN_PRICE_URL_COINGECKO")
-
 if network == "mainnet":
     provider_url = os.getenv("PROVIDER_URL_MAINNET")
     oracle_address = "0x8cFc184c877154a8F9ffE0fe75649dbe5e2DBEbf"
@@ -66,7 +65,7 @@ elif network == "polygon":
     provider_url = os.getenv("PROVIDER_URL_POLYGON")
     oracle_address = "0x8cFc184c877154a8F9ffE0fe75649dbe5e2DBEbf"
     oracle_token_address = "0xE3322702BEdaaEd36CdDAb233360B939775ae5f1"
-    autopay_address = "0x11cA06aa780ce89dbBF5D8F5fA8bf6965Be942c9c"
+    autopay_address = "0x11cA06aa780ce89dbBF5D8F5fA8bf6965Be942c9"
     private_key = os.getenv("POLYGON_PK")
     oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
     oracle_token_price_url_selector = "tellor"
@@ -109,6 +108,18 @@ elif network == "optimism-goerli":
     base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
     base_token_price_url_selector = "ethereum"
     gas_price_url = "https://api-optimistic.etherscan.io/api?module=proxy&action=eth_gasPrice&apikey=YourApiKeyToken" # not used
+    chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
+elif network == "zkevm":
+    provider_url = os.getenv("PROVIDER_URL_ZKEVM")
+    oracle_address = "0x34Fae97547E990ef0E05e05286c51E4645bf1A85"
+    oracle_token_address = "0x03346b2F4BC23fd7f4935f74E70c7a7FebC45313"
+    autopay_address = "0x6684E5DdbEe1b97E10847468cB5f4e38f3aB83FE"
+    private_key = os.getenv("ZKEVM_PK")
+    oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
+    oracle_token_price_url_selector = "tellor"
+    base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    base_token_price_url_selector = "ethereum"
+    gas_price_url = "https://api.zkevm.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken" # not used
     chainlink_aggregator_address = os.getenv("CHAINLINK_AGGREGATOR_ADDRESS")
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
