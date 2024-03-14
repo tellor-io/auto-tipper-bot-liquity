@@ -318,8 +318,8 @@ def approve_token_and_check_balance():
                 tx.update({'gas': gas_estimate})
                 tx.update({'nonce': web3.eth.get_transaction_count(acct.address)})
             except:
-                print("error building transaction")
-                print("building legacy transaction")
+                logging.warning("error building transaction")
+                logging.info("building legacy transaction")
                 tx = oracle_token_contract.functions.approve(autopay_contract.address, int(
                     config.token_approval_amount)).buildTransaction({
                         'gasPrice': web3.eth.gas_price,
@@ -343,7 +343,7 @@ def get_api3_latest_data(latest_data, previous_data):
             # no new data
             return latest_data, previous_data
         else:
-            return latest_data_tmp, previous_data
+            return latest_data_tmp, latest_data
     except:
         logging.warning("error getting api3 latest data")
         return 0, 0
