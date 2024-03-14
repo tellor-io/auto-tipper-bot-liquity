@@ -66,6 +66,11 @@ with open("abis/TellorPlayground.json") as f:
     abi = json.load(f)
 
 oracle_contract = web3.eth.contract(address=config.oracle_address, abi=abi)
+
+# import token abi
+with open("abis/ERC20.json") as f:
+    abi = json.load(f)
+
 oracle_token_contract = web3.eth.contract(
     address=config.oracle_token_address, abi=abi)
 
@@ -79,12 +84,12 @@ autopay_contract = web3.eth.contract(address=config.autopay_address, abi=abi)
 with open("abis/EACAggregatorProxy.json") as f:
     abi = json.load(f)
 
-chainlink_agg_contract = web3.eth.contract(address=config.chainlink_aggregator_address, abi=abi)
+chronicle_oracle_contract = web3.eth.contract(address=config.chainlink_aggregator_address, abi=abi)
 
 logging.info("oracle contract: %s", oracle_contract.address)
 logging.info("oracle token contract: %s", oracle_token_contract.address)
 logging.info("autopay contract: %s", autopay_contract.address)
-logging.info("chainlink aggregator contract: %s", chainlink_agg_contract.address)
+logging.info("chainlink aggregator contract: %s", chronicle_oracle_contract.address)
 
 
 def get_gas_cost_in_oracle_token():
@@ -103,7 +108,13 @@ def get_gas_cost_in_oracle_token():
         trb_price = oracle_token_price
         logging.info("oracle token price: %s", oracle_token_price)
 
-        if config.network != 'optimism' and config.network != 'optimism-goerli':
+        if config.network == 'optimism' or config.network == 'optimism-goerli':
+            # optimism uses custom gas cost calculation logic, just hardcode for now
+            gas_cost_usd = 0.5
+        elif config.network == 'zkevm':
+            # zkevm uses custom gas cost calculation logic, just hardcode for now
+            gas_cost_usd = 7.0
+        else:
             # get gas price
             response_gas_price = requests.get(
                 config.gas_price_url)
@@ -112,9 +123,7 @@ def get_gas_cost_in_oracle_token():
             logging.info("gas price: %s", gas_price)
 
             gas_cost_usd = config.total_gas_cost * gas_price * base_token_price / 1000000000
-        else:
-            # optimism uses custom gas cost calculation logic, just hardcode for now
-            gas_cost_usd = 0.5
+
         logging.info("gas cost in usd: %s", gas_cost_usd)
         # convert gas cost to oracle token: gas_price * gas_cost * base_token_price / oracle_price
         gas_cost_oracle_token = gas_cost_usd / oracle_token_price
@@ -289,8 +298,13 @@ def initiate_tipping_sequence(retip_count, query_id, query_data, last_report_tim
 
 def approve_token_and_check_balance():
     # check token allowance
-    token_allowance = oracle_token_contract.functions.allowance(
-        acct.address, autopay_contract.address).call()
+    token_allowance = 0
+    try:
+        token_allowance = oracle_token_contract.functions.allowance(
+            acct.address, autopay_contract.address).call({'from': '0x0000000000000000000000000000000000000000'})
+    except:
+        logging.warning("error getting token allowance")
+        token_allowance = 0
     logging.info("token allowance: %s", token_allowance)
     if token_allowance < config.token_approval_amount / 10:
         # approve token allowance
@@ -324,23 +338,31 @@ def approve_token_and_check_balance():
     base_token_balance = web3.eth.get_balance(acct.address)
     logging.info("%s token balance: %s", config.base_token_price_url_selector, base_token_balance / 1e18)
     return [oracle_token_balance, base_token_balance]
+    
 
-def get_chainlink_latest_round_data():
+def get_chronicle_latest_round_data():
     try:
-        latest_round_data = chainlink_agg_contract.functions.latestRoundData().call()
+        latest_round_data = chronicle_oracle_contract.functions.latestRoundData().call({'from': '0x0000000000000000000000000000000000000000'})
         return latest_round_data
     except:
-        logging.warning("error getting chainlink round data")
+        logging.warning("error getting chronicle round data")
         return 0
 
-def get_chainlink_previous_round_data(chainlink_latest_round_data):
+def update_chronicle_data(latest_data, previous_data):
     try:
-        previous_round_data = chainlink_agg_contract.functions.getRoundData(
-            chainlink_latest_round_data[0] - 1).call()
-        return previous_round_data
+        new_data_tmp = get_chronicle_latest_round_data()
+        print("new_data_tmp: ", new_data_tmp)
+        if latest_data == 0:
+            # first time calling this function
+            return new_data_tmp, new_data_tmp
+        elif new_data_tmp[1] == latest_data[1]:
+            # no new data
+            return latest_data, previous_data
+        else:
+            return new_data_tmp, latest_data
     except:
-        logging.warning("error getting chainlink previous round data")
-        return 0
+        logging.warning("error getting chronicle latest data")
+        return 0, 0
 
 def extract_selectors(url):
     parsed_url = urlparse(url)
@@ -373,16 +395,16 @@ def collateral_price_change_above_threshold(last_saved_collateral_price):
         logging.warning("error getting collateral token price")
         return False
 
-def chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
-    current_price = chainlink_latest_round_data[1]
-    previous_price = chainlink_previous_round_data[1]
+def chronicle_price_change_above_max(chronicle_latest_round_data, chronicle_previous_round_data):
+    current_price = chronicle_latest_round_data[1]
+    previous_price = chronicle_previous_round_data[1]
 
     min_price = min(current_price, previous_price)
     max_price = max(current_price, previous_price)
 
     percent_deviation = (max_price - min_price) / max_price
     if percent_deviation > config.chainlink_max_price_deviation:
-        logging.info("chainlink price change above max")
+        logging.info("chronicle price change above max")
         return True
     else:
         return False
@@ -393,7 +415,7 @@ def chainlink_is_frozen(chainlink_latest_round_data):
     current_timestamp = datetime.datetime.now().timestamp()
     latest_timestamp = chainlink_latest_round_data[3]
     if current_timestamp - latest_timestamp > config.chainlink_is_frozen_timeout:
-        logging.info("chainlink is almost frozen. latest timestamp: %s", latest_timestamp)
+        logging.info("chronicle is almost frozen. latest timestamp: %s", latest_timestamp)
         return True
     else:
         return False
@@ -404,13 +426,13 @@ def chainlink_is_broken(chainlink_latest_round_data):
     updated_at = chainlink_latest_round_data[3]
     answer = chainlink_latest_round_data[1]
     if int(round_id) == 0:
-        logging.info("chainlink is broken. round id: %s", round_id)
+        logging.info("chronicle is broken. round id: %s", round_id)
         return True
     if int(updated_at) == 0 or int(updated_at) > current_timestamp:
-        logging.info("chainlink is broken. updated at: %s", updated_at)
+        logging.info("chronicle is broken. updated at: %s", updated_at)
         return True
     if int(answer) == 0:
-        logging.info("chainlink is broken. answer: %s", answer)
+        logging.info("chronicle is broken. answer: %s", answer)
         return True
     # chainlink is not broken
     return False
@@ -421,6 +443,8 @@ def main():
     interval = config.interval
     start_time = config.start_time
     collateral_token_price = 0
+    chronicle_latest_data = 0
+    chronicle_previous_data = 0
 
     balances = approve_token_and_check_balance()
     while True:
@@ -428,7 +452,7 @@ def main():
         seconds_until_next_interval = get_seconds_until_next_interval(interval=interval, start_time=start_time)
         current_timestamp = datetime.datetime.now().timestamp()
         seconds_since_last_tellor_report = current_timestamp - int(last_report_time)
-        chainlink_latest_round_data = get_chainlink_latest_round_data()
+        chronicle_latest_data, chronicle_previous_data = update_chronicle_data(chronicle_latest_data, chronicle_previous_data)
         # bools must all be true to report
         sufficient_funds_bool = True
         report_for_backup_oracle = False
@@ -442,14 +466,14 @@ def main():
         if balances[1] == 0:
             logging.error("zero %s base token balance", config.base_token_price_url_selector)
             sufficient_funds_bool = False
-        if chainlink_latest_round_data != 0:
-            if chainlink_is_frozen(chainlink_latest_round_data):
+        if chronicle_latest_data != 0:
+            if chainlink_is_frozen(chronicle_latest_data):
                 report_for_backup_oracle = True
-            if chainlink_is_broken(chainlink_latest_round_data):
+            if chainlink_is_broken(chronicle_latest_data):
                 report_for_backup_oracle = True
-            chainlink_previous_round_data = get_chainlink_previous_round_data(chainlink_latest_round_data)
-            if chainlink_previous_round_data != 0:
-                if chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
+            # chronicle_previous_data = get_chainlink_previous_round_data(chronicle_latest_data)
+            if chronicle_previous_data != 0:
+                if chronicle_price_change_above_max(chronicle_latest_data, chronicle_previous_data):
                     report_for_backup_oracle = True
         if seconds_since_last_tellor_report >= config.chainlink_is_frozen_timeout:
             seconds_since_last_tellor_report_is_sufficient = True
