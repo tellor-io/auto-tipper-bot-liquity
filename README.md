@@ -27,7 +27,7 @@ pip install -e .
 ```
 
 ### Usage
-Add your private key and rpc url to `.env` file. Update the `QUERY_ID`, `QUERY_DATA`, and `REDSTONE_FEED_ADDRESS`, and `NETWORK` to your desired values. Set the `INTERVAL` based on how often you want the bot to check conditions for adding a tip. In addition, set the `REDSTONE_IS_FROZEN_TIMEOUT` and `REDSTONE_MAX_PRICE_DEVIATION_FROM_PREVIOUS_ROUND` parameters to match the Liquity-like `PriceFeed` contract.
+Add your private key and rpc url to `.env` file. Update the `QUERY_ID`, `QUERY_DATA`, and `REDSTONE_FEED_ADDRESS`, `REDSTONE_DATAFEED_ID`, and `NETWORK` to your desired values. Set the `INTERVAL` based on how often you want the bot to check conditions for adding a tip. In addition, set the `REDSTONE_IS_FROZEN_TIMEOUT` and `REDSTONE_MAX_PRICE_DEVIATION_FROM_PREVIOUS_ROUND` parameters to match the Liquity-like `PriceFeed` contract.
 
 In the case where tellor is triggered as the oracle, if you also want your bot to tip based on a collateral price change threshold, set the `PRICE_CHANGE_THRESHOLD` to a value greater than 0. A value of `0.05` represents a price change of 5%, for example. Set `COLLATERAL_TOKEN_PRICE_URL_COINGECKO` to the url of the price feed for your collateral token. With this feature enabled, the bot will tip if any of the "Redstone is down" conditions are met, and the collateral token price changes by more than this threshold. Note that, in the event any of the "Redstone is down" conditions are met, the bot will also continue to tip in an interval of `REDSTONE_IS_FROZEN_TIMEOUT`. To disable this feature, set `PRICE_CHANGE_THRESHOLD` to `0`.
 
