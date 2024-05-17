@@ -122,6 +122,18 @@ elif network == "zkevm":
     base_token_price_url_selector = "ethereum"
     gas_price_url = "https://api.zkevm.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken" # not used
     redstone_feed_address = os.getenv("REDSTONE_FEED_ADDRESS")
+elif network == "bob":
+    provider_url = os.getenv("PROVIDER_URL_BOB")
+    oracle_address = "0x896419Ed2E0dC848a1f7d2814F4e5Df4b9B9bFcc"
+    oracle_token_address = "0x665060707c3Ea3c31b3eaBaD7F409072446E1D50"
+    autopay_address = "0x9EA18BFDB50E9bb4A18F9d3Df7804E398F8fE0dc"
+    private_key = os.getenv("BOB_PK")
+    oracle_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
+    oracle_token_price_url_selector = "tellor"
+    base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    base_token_price_url_selector = "ethereum"
+    gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken" # not used
+    redstone_feed_address = os.getenv("REDSTONE_FEED_ADDRESS")
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
     oracle_address = "0x8d38Fdc9d2d75476b473bA5c50Cc4bd92E0b2301"
@@ -140,7 +152,7 @@ else:
 
 # can change these values or leave them as is
 start_time = datetime.datetime(2022, 12, 1, 0, 0, 0) # start time for the first interval
-initial_profit_margin_usd = 2.0 # usd
+initial_profit_margin_usd = os.getenv("INITIAL_PROFIT_MARGIN_USD") # usd
 tip_multiplier = 1.10 # multiplier for each tip retry
 max_retip_count = 10 # max number of times to retry a tip
 retip_delay = 45 # seconds

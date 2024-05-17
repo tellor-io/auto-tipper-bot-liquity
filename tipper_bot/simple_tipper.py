@@ -103,7 +103,10 @@ def get_gas_cost_in_oracle_token():
         trb_price = oracle_token_price
         logging.info("oracle token price: %s", oracle_token_price)
 
-        if config.network != 'optimism' and config.network != 'optimism-goerli':
+        if config.network == 'optimism' or config.network == 'optimism-goerli' or config.network == "bob":
+            # optimism uses custom gas cost calculation logic, just hardcode for now
+            gas_cost_usd = 0.5
+        else:
             # get gas price
             response_gas_price = requests.get(
                 config.gas_price_url)
@@ -112,9 +115,6 @@ def get_gas_cost_in_oracle_token():
             logging.info("gas price: %s", gas_price)
 
             gas_cost_usd = config.total_gas_cost * gas_price * base_token_price / 1000000000
-        else:
-            # optimism uses custom gas cost calculation logic, just hardcode for now
-            gas_cost_usd = 0.5
         logging.info("gas cost in usd: %s", gas_cost_usd)
         # convert gas cost to oracle token: gas_price * gas_cost * base_token_price / oracle_price
         gas_cost_oracle_token = gas_cost_usd / oracle_token_price
@@ -290,6 +290,15 @@ def initiate_tipping_sequence(retip_count, query_id, query_data, last_report_tim
 def approve_token_and_check_balance():
     # check token allowance
     token_allowance = 0
+    base_token_balance = 0
+    try:
+        base_token_balance = web3.eth.get_balance(acct.address)
+    except:
+        logging.warning("error getting base token balance")
+        return [0, 0]
+    if base_token_balance == 0:
+        logging.error("zero base token balance")
+        return [0, 0]
     try:
         token_allowance = oracle_token_contract.functions.allowance(
             acct.address, autopay_contract.address).call()
@@ -411,13 +420,13 @@ def redstone_is_frozen(redstone_latest_round_data):
 
 def redstone_is_broken(redstone_latest_round_data, round_id):
     current_timestamp = datetime.datetime.now().timestamp()
-    updated_at = redstone_latest_round_data[1]
+    updated_at = redstone_latest_round_data[1] / 1000
     answer = redstone_latest_round_data[0]
     if int(round_id) == 0:
         logging.info("redstone is broken. round id: %s", round_id)
         return True
     if int(updated_at) == 0 or int(updated_at) > current_timestamp:
-        logging.info("redstone is broken. updated at: %s", updated_at)
+        logging.info("redstone is broken. updated at: %s, current timestamp: %s", updated_at, current_timestamp)
         return True
     if int(answer) == 0:
         logging.info("redstone is broken. answer: %s", answer)
