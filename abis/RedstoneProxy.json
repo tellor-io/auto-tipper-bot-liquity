@@ -1,0 +1,114 @@
+[
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_dataId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_answer",
+				"type": "uint256"
+			}
+		],
+		"name": "submitValueMock",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getLatestRoundId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "latestRoundId",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "dataFeedId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "roundId",
+				"type": "uint256"
+			}
+		],
+		"name": "getRoundDataFromAdapter",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "dataFeedValue",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint128",
+				"name": "roundDataTimestamp",
+				"type": "uint128"
+			},
+			{
+				"internalType": "uint128",
+				"name": "roundBlockTimestamp",
+				"type": "uint128"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "roundData",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint128",
+				"name": "dataTimestamp",
+				"type": "uint128"
+			},
+			{
+				"internalType": "uint128",
+				"name": "blockTimestamp",
+				"type": "uint128"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "roundIdCurrent",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]

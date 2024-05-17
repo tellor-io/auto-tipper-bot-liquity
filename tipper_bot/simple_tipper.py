@@ -75,16 +75,16 @@ with open("abis/Autopay.json") as f:
 
 autopay_contract = web3.eth.contract(address=config.autopay_address, abi=abi)
 
-# import Chainlink Aggregator abi
-with open("abis/EACAggregatorProxy.json") as f:
+# import Redstone Aggregator abi
+with open("abis/RedstoneProxy.json") as f:
     abi = json.load(f)
 
-chainlink_agg_contract = web3.eth.contract(address=config.chainlink_aggregator_address, abi=abi)
+redstone_feed_contract = web3.eth.contract(address=config.redstone_feed_address, abi=abi)
 
 logging.info("oracle contract: %s", oracle_contract.address)
 logging.info("oracle token contract: %s", oracle_token_contract.address)
 logging.info("autopay contract: %s", autopay_contract.address)
-logging.info("chainlink aggregator contract: %s", chainlink_agg_contract.address)
+logging.info("redstone feed contract: %s", redstone_feed_contract.address)
 
 
 def get_gas_cost_in_oracle_token():
@@ -289,9 +289,14 @@ def initiate_tipping_sequence(retip_count, query_id, query_data, last_report_tim
 
 def approve_token_and_check_balance():
     # check token allowance
-    token_allowance = oracle_token_contract.functions.allowance(
-        acct.address, autopay_contract.address).call()
-    logging.info("token allowance: %s", token_allowance)
+    token_allowance = 0
+    try:
+        token_allowance = oracle_token_contract.functions.allowance(
+            acct.address, autopay_contract.address).call()
+    except:
+        logging.warning("error getting token allowance")
+        return [0, 0]
+    logging.info("token allowance: %s", token_allowance / 1e18)
     if token_allowance < config.token_approval_amount / 10:
         # approve token allowance
         logging.info("approving token amount: %s", config.token_approval_amount)
@@ -325,21 +330,25 @@ def approve_token_and_check_balance():
     logging.info("%s token balance: %s", config.base_token_price_url_selector, base_token_balance / 1e18)
     return [oracle_token_balance, base_token_balance]
 
-def get_chainlink_latest_round_data():
+def get_redstone_latest_round_data():
     try:
-        latest_round_data = chainlink_agg_contract.functions.latestRoundData().call()
-        return latest_round_data
+        data_id = config.redstone_datafeed_id
+        latest_round_id = redstone_feed_contract.functions.getLatestRoundId().call()
+        latest_round_data = redstone_feed_contract.functions.getRoundDataFromAdapter(data_id, latest_round_id).call()
+        return latest_round_data, latest_round_id
     except:
-        logging.warning("error getting chainlink round data")
-        return 0
+        logging.warning("error getting redstone latest round data")
+        return 0, 0
 
-def get_chainlink_previous_round_data(chainlink_latest_round_data):
+def get_redstone_previous_round_data(redstone_latest_round_data):
     try:
-        previous_round_data = chainlink_agg_contract.functions.getRoundData(
-            chainlink_latest_round_data[0] - 1).call()
+        data_id = config.redstone_datafeed_id
+        latest_round_id = redstone_feed_contract.functions.getLatestRoundId().call()
+        previous_round_id = latest_round_id - 1
+        previous_round_data = redstone_feed_contract.functions.getRoundDataFromAdapter(data_id, previous_round_id).call()
         return previous_round_data
     except:
-        logging.warning("error getting chainlink previous round data")
+        logging.warning("error getting redstone previous round data")
         return 0
 
 def extract_selectors(url):
@@ -373,46 +382,47 @@ def collateral_price_change_above_threshold(last_saved_collateral_price):
         logging.warning("error getting collateral token price")
         return False
 
-def chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
-    current_price = chainlink_latest_round_data[1]
-    previous_price = chainlink_previous_round_data[1]
-
+def redstone_price_change_above_max(redstone_latest_round_data, redstone_previous_round_data):
+    current_price = redstone_latest_round_data[0]
+    previous_price = redstone_previous_round_data[0]
+    logging.info("current price:    %s", current_price)
+    logging.info("previous price:   %s", previous_price)
     min_price = min(current_price, previous_price)
     max_price = max(current_price, previous_price)
 
     percent_deviation = (max_price - min_price) / max_price
-    if percent_deviation > config.chainlink_max_price_deviation:
-        logging.info("chainlink price change above max")
+    logging.info("percent deviation: %s", percent_deviation)
+    if percent_deviation > config.redstone_max_price_deviation:
+        logging.info("redstone price change above max")
         return True
     else:
         return False
         
 
-def chainlink_is_frozen(chainlink_latest_round_data):
+def redstone_is_frozen(redstone_latest_round_data):
     # block.timestamp - response.timestamp > TIMEOUT
     current_timestamp = datetime.datetime.now().timestamp()
-    latest_timestamp = chainlink_latest_round_data[3]
-    if current_timestamp - latest_timestamp > config.chainlink_is_frozen_timeout:
-        logging.info("chainlink is almost frozen. latest timestamp: %s", latest_timestamp)
+    latest_timestamp = redstone_latest_round_data[1]
+    if current_timestamp - latest_timestamp > config.redstone_is_frozen_timeout:
+        logging.info("redstone is almost frozen. latest timestamp: %s", latest_timestamp)
         return True
     else:
         return False
 
-def chainlink_is_broken(chainlink_latest_round_data):
+def redstone_is_broken(redstone_latest_round_data, round_id):
     current_timestamp = datetime.datetime.now().timestamp()
-    round_id = chainlink_latest_round_data[0]
-    updated_at = chainlink_latest_round_data[3]
-    answer = chainlink_latest_round_data[1]
+    updated_at = redstone_latest_round_data[1]
+    answer = redstone_latest_round_data[0]
     if int(round_id) == 0:
-        logging.info("chainlink is broken. round id: %s", round_id)
+        logging.info("redstone is broken. round id: %s", round_id)
         return True
     if int(updated_at) == 0 or int(updated_at) > current_timestamp:
-        logging.info("chainlink is broken. updated at: %s", updated_at)
+        logging.info("redstone is broken. updated at: %s", updated_at)
         return True
     if int(answer) == 0:
-        logging.info("chainlink is broken. answer: %s", answer)
+        logging.info("redstone is broken. answer: %s", answer)
         return True
-    # chainlink is not broken
+    # redstone is not broken
     return False
 
 def main():
@@ -421,6 +431,7 @@ def main():
     interval = config.interval
     start_time = config.start_time
     collateral_token_price = 0
+    latest_round_id = 0
 
     balances = approve_token_and_check_balance()
     while True:
@@ -428,7 +439,7 @@ def main():
         seconds_until_next_interval = get_seconds_until_next_interval(interval=interval, start_time=start_time)
         current_timestamp = datetime.datetime.now().timestamp()
         seconds_since_last_tellor_report = current_timestamp - int(last_report_time)
-        chainlink_latest_round_data = get_chainlink_latest_round_data()
+        redstone_latest_round_data, latest_round_id = get_redstone_latest_round_data()
         # bools must all be true to report
         sufficient_funds_bool = True
         report_for_backup_oracle = False
@@ -442,16 +453,16 @@ def main():
         if balances[1] == 0:
             logging.error("zero %s base token balance", config.base_token_price_url_selector)
             sufficient_funds_bool = False
-        if chainlink_latest_round_data != 0:
-            if chainlink_is_frozen(chainlink_latest_round_data):
+        if redstone_latest_round_data != 0:
+            if redstone_is_frozen(redstone_latest_round_data):
                 report_for_backup_oracle = True
-            if chainlink_is_broken(chainlink_latest_round_data):
+            if redstone_is_broken(redstone_latest_round_data, latest_round_id):
                 report_for_backup_oracle = True
-            chainlink_previous_round_data = get_chainlink_previous_round_data(chainlink_latest_round_data)
-            if chainlink_previous_round_data != 0:
-                if chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_previous_round_data):
+            redstone_previous_round_data = get_redstone_previous_round_data(redstone_latest_round_data)
+            if redstone_previous_round_data != 0:
+                if redstone_price_change_above_max(redstone_latest_round_data, redstone_previous_round_data):
                     report_for_backup_oracle = True
-        if seconds_since_last_tellor_report >= config.chainlink_is_frozen_timeout:
+        if seconds_since_last_tellor_report >= config.redstone_is_frozen_timeout:
             seconds_since_last_tellor_report_is_sufficient = True
         if (sufficient_funds_bool and report_for_backup_oracle) and (seconds_since_last_tellor_report_is_sufficient or collateral_price_change_above_threshold_bool):
             # initiate tipping sequence
