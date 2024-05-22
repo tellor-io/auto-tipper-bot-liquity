@@ -383,6 +383,11 @@ def chainlink_price_change_above_max(chainlink_latest_round_data, chainlink_prev
     percent_deviation = (max_price - min_price) / max_price
     if percent_deviation > config.chainlink_max_price_deviation:
         logging.info("chainlink price change above max")
+        logging.info("current price: %s", current_price)
+        logging.info("previous price: %s", previous_price)
+        logging.info("percent deviation: %s", percent_deviation)
+        logging.info("current round: %s", chainlink_latest_round_data[0])
+        logging.info("previous round: %s", chainlink_previous_round_data[0])
         return True
     else:
         return False
@@ -393,7 +398,7 @@ def chainlink_is_frozen(chainlink_latest_round_data):
     current_timestamp = datetime.datetime.now().timestamp()
     latest_timestamp = chainlink_latest_round_data[3]
     if current_timestamp - latest_timestamp > config.chainlink_is_frozen_timeout:
-        logging.info("chainlink is almost frozen. latest timestamp: %s", latest_timestamp)
+        logging.info("chainlink is almost frozen. latest timestamp: %s, current timestamp: %s", latest_timestamp, current_timestamp)
         return True
     else:
         return False
@@ -407,7 +412,7 @@ def chainlink_is_broken(chainlink_latest_round_data):
         logging.info("chainlink is broken. round id: %s", round_id)
         return True
     if int(updated_at) == 0 or int(updated_at) > current_timestamp:
-        logging.info("chainlink is broken. updated at: %s", updated_at)
+        logging.info("chainlink is broken. updated at: %s, current timestamp: %s", updated_at, current_timestamp)
         return True
     if int(answer) == 0:
         logging.info("chainlink is broken. answer: %s", answer)
