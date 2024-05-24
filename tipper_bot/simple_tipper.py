@@ -390,7 +390,14 @@ def api3_price_change_above_max(latest_data, previous_data):
 
     percent_deviation = (max_price - min_price) / max_price
     if percent_deviation > config.api3_max_price_deviation:
+        current_time = datetime.datetime.now().timestamp()
         logging.info("api3 price change above max")
+        logging.info("current price: %s", current_price)
+        logging.info("previous price: %s", previous_price)
+        logging.info("percent deviation: %s", percent_deviation)
+        logging.info("current time: %s", current_time)
+        logging.info("current report timestamp: %s", latest_data[1])
+        logging.info("previous report timestamp: %s", previous_data[1])
         return True
     else:
         return False
@@ -399,7 +406,7 @@ def api3_is_frozen(api3_latest_data):
     current_timestamp = datetime.datetime.now().timestamp()
     latest_timestamp = api3_latest_data[1]
     if current_timestamp - latest_timestamp > config.api3_is_frozen_timeout:
-        logging.info("api3 is almost frozen. latest timestamp: %s", latest_timestamp)
+        logging.info("api3 is almost frozen. latest timestamp: %s, current timestamp: %s", latest_timestamp, current_timestamp)
         return True
     else:
         return False
@@ -409,7 +416,7 @@ def api3_is_broken(api3_latest_data):
     updated_at = api3_latest_data[1]
     answer = api3_latest_data[0]
     if int(updated_at) == 0 or int(updated_at) > current_timestamp:
-        logging.info("api3 is broken. updated at: %s", updated_at)
+        logging.info("api3 is broken. updated at: %s, current timestamp: %s", updated_at, current_timestamp)
         return True
     if int(answer) == 0:
         logging.info("api3 is broken. answer: %s", answer)
