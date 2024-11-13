@@ -215,6 +215,9 @@ def tip(amount_to_tip, query_id, query_data):
                 'nonce': web3.eth.getTransactionCount(acct.address),
                 # 'gas': gas_estimate,
         })
+        gas_estimate = web3.eth.estimate_gas(tx)
+        logging.info("gas estimate: %s", gas_estimate)
+        tx.update({'gas': gas_estimate})
         
 
     # sign transaction
@@ -338,6 +341,9 @@ def approve_token_and_check_balance():
                     'nonce': web3.eth.getTransactionCount(acct.address),
                     # 'gas': gas_estimate,
             })
+            gas_estimate = web3.eth.estimate_gas(tx)
+            logging.info("gas estimate: %s", gas_estimate)
+            tx.update({'gas': gas_estimate})
         signed_tx = web3.eth.account.sign_transaction(tx, config.private_key)
         tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
         logging.info("transaction hash: %s", tx_hash.hex())
