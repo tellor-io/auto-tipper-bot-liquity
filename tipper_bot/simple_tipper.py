@@ -52,14 +52,25 @@ price_change_threshold = config.price_change_threshold
 # setup provider
 provider_url = config.provider_url
 web3 = Web3(Web3.HTTPProvider(provider_url))
+
+# Add POA middleware if needed
+try:
+    # Try to get the first block
+    web3.eth.get_block('latest')
+except:
+    # If we get an ExtraDataLengthError, we're on a POA chain
+    from web3.middleware import geth_poa_middleware
+    web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+    logging.info("Injected POA middleware")
+
 # set private key
 web3.eth.account.enable_unaudited_hdwallet_features()
 acct = web3.eth.account.privateKeyToAccount(config.private_key)
 web3.eth.defaultAccount = acct.address
-logging.info("Connected to Ethereum node: %s", web3.isConnected())
+
 logging.info("Using network: %s", config.network)
 logging.info("Using address: %s", web3.eth.defaultAccount)
-logging.info("Current block number: %s", web3.eth.blockNumber)
+logging.info("Current block number: %s", web3.eth.block_number)
 
 # import playgound abi
 with open("abis/TellorPlayground.json") as f:
