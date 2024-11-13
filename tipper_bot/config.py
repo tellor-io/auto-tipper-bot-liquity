@@ -134,6 +134,18 @@ elif network == "bob":
     base_token_price_url_selector = "ethereum"
     gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken" # not used
     redstone_feed_address = os.getenv("REDSTONE_FEED_ADDRESS")
+elif network == "scroll":
+    provider_url = os.getenv("PROVIDER_URL_SCROLL")
+    oracle_address = "0x896419Ed2E0dC848a1f7d2814F4e5Df4b9B9bFcc"
+    oracle_token_address = "0xfda87943Be918360413979ce7296E1249fcb987e"
+    autopay_address = "0x9EA18BFDB50E9bb4A18F9d3Df7804E398F8fE0dc"
+    private_key = os.getenv("SCROLL_PK")
+    oracle_token_price_url = "https ://api.coingecko.com/api/v3/simple/price?ids=tellor&vs_currencies=usd"
+    oracle_token_price_url_selector = "tellor"
+    base_token_price_url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    base_token_price_url_selector = "ethereum"
+    gas_price_url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=YourApiKeyToken" # not used
+    redstone_feed_address = os.getenv("REDSTONE_FEED_ADDRESS")
 elif network == "ganache":
     provider_url = os.getenv("PROVIDER_URL_GANACHE")
     oracle_address = "0x8d38Fdc9d2d75476b473bA5c50Cc4bd92E0b2301"
